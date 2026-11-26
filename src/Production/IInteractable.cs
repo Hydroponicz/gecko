@@ -21,6 +21,9 @@ public interface IInteractable
     /// <summary>Roughly how far the object extends from <see cref="InteractPosition"/>.</summary>
     float InteractRadius { get; }
 
+    /// <summary>Where a character should stand to use this, given where they are now (world space).</summary>
+    Vector3 GetAccessPoint(Vector3 from);
+
     /// <summary>False once the object is gone (e.g. a machine was removed).</summary>
     bool IsAvailable { get; }
 

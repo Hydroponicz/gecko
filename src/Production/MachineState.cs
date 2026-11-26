@@ -33,8 +33,15 @@ public sealed class MachineState
         rotation % 2 == 0 ? footprint : new Vector2I(footprint.Y, footprint.X);
 
     public bool Accepts(ItemType type) => _inputs.ContainsKey(type);
+    /// <summary>Items waiting to be used.</summary>
     public int InputCount(ItemType type) => _inputs.GetValueOrDefault(type);
-    public int InputRoom(ItemType type) => Accepts(type) ? Def.InputCapacity - InputCount(type) : 0;
+
+    /// <summary>Everything of this input inside the machine: waiting plus currently being worked on.
+    /// This is what capacity counts, so "holds 5" means 5 in total.</summary>
+    public int Loaded(ItemType type) =>
+        InputCount(type) + ActiveCrafts * Def.Inputs.GetValueOrDefault(type);
+
+    public int InputRoom(ItemType type) => Accepts(type) ? Mathf.Max(0, Def.InputCapacity - Loaded(type)) : 0;
 
     /// <summary>Progress 0..1 of the craft closest to finishing, or 0 if idle.</summary>
     public float LeadProgress

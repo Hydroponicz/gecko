@@ -9,7 +9,7 @@ public enum ItemType
     Ink,
     WetSheet,
     DrySheet,
-    LooseBills,
+    BillBundle,
     CounterfeitBrick,
 }
 
@@ -47,11 +47,11 @@ public static class Items
             new Vector3(0.32f, 0.02f, 0.22f), new Color(0.65f, 0.8f, 0.65f)),
         [ItemType.DrySheet] = new(ItemType.DrySheet, "Dry Sheet", 5, ItemShape.Box,
             new Vector3(0.32f, 0.02f, 0.22f), new Color(0.35f, 0.55f, 0.35f)),
-        // A small bundle of bills with a paper band
-        [ItemType.LooseBills] = new(ItemType.LooseBills, "Loose Bills", 20, ItemShape.Box,
+        // A small bundle of freshly cut bills with a paper band
+        [ItemType.BillBundle] = new(ItemType.BillBundle, "Bill Bundle", 5, ItemShape.Box,
             new Vector3(0.16f, 0.03f, 0.07f), new Color(0.3f, 0.5f, 0.3f), new Color(0.9f, 0.88f, 0.8f)),
         // A brick of banknotes: a thick block of bills, shrink-wrapped and banded
-        [ItemType.CounterfeitBrick] = new(ItemType.CounterfeitBrick, "Counterfeit Brick", 4, ItemShape.Box,
+        [ItemType.CounterfeitBrick] = new(ItemType.CounterfeitBrick, "Counterfeit Brick", 5, ItemShape.Box,
             new Vector3(0.17f, 0.1f, 0.08f), new Color(0.32f, 0.5f, 0.32f), new Color(0.85f, 0.75f, 0.35f)),
     };
 

@@ -1,7 +1,6 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1_player"]
-[ext_resource type="Script" path="res://src/UI/DebugHud.cs" id="2_hud"]
 [ext_resource type="Script" path="res://src/Production/FacilityNode.cs" id="3_facility"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
@@ -102,12 +101,3 @@ script = ExtResource("3_facility")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
-
-[node name="DebugHUD" type="CanvasLayer" parent="."]
-script = ExtResource("2_hud")
-
-[node name="Label" type="Label" parent="DebugHUD"]
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 900.0
-offset_bottom = 200.0

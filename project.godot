@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 InputSetup="*res://src/Core/InputSetup.cs"
 Gamepad="*res://src/Core/Gamepad.cs"
 GameHud="*res://src/UI/GameHud.cs"
+DebugMenu="*res://src/UI/DebugMenu.cs"
 
 [dotnet]
 

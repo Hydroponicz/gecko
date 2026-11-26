@@ -48,7 +48,7 @@ public partial class InputSetup : Node
         Bind(Actions.BuildMove, KeyEvent(Key.E), ButtonEvent(JoyButton.X)); // Square
 
         // Debug
-        Bind(Actions.DebugLightbar, KeyEvent(Key.T), ButtonEvent(JoyButton.Y)); // Triangle
+        Bind(Actions.DebugMenu, KeyEvent(Key.F1), ButtonEvent(JoyButton.RightStick)); // R3
     }
 
     private static void Bind(StringName action, params InputEvent[] events)

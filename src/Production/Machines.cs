@@ -23,7 +23,11 @@ public sealed record MachineDef(
     int OutputCapacity,
     bool OutputToStash);
 
-/// <summary>Counterfeit cash chain. All numbers are placeholders to tune in play.</summary>
+/// <summary>
+/// Counterfeit cash chain. Design rule: every machine holds up to 5 of each input (including what it's
+/// working on) and 5 of its output, and you carry 5 of anything. Simple and easy to load; the game is
+/// about immersion and fun, not ratio optimisation. Durations are placeholders to tune in play.
+/// </summary>
 public static class Machines
 {
     public static readonly MachineDef PrintingPress = new(
@@ -32,25 +36,25 @@ public static class Machines
         ItemType.WetSheet, OutputAmount: 1, Duration: 10f,
         Slots: 1, InputCapacity: 5, OutputCapacity: 5, OutputToStash: false);
 
-    /// <summary>Capacity puzzle: holds 6 sheets, each drying on its own timer.</summary>
+    /// <summary>Hangs up to 5 sheets, each drying on its own timer.</summary>
     public static readonly MachineDef DryingRack = new(
         "drying_rack", "Drying Rack", new Vector2I(1, 3), 1.8f, new Color(0.5f, 0.42f, 0.3f),
         new Dictionary<ItemType, int> { [ItemType.WetSheet] = 1 },
         ItemType.DrySheet, OutputAmount: 1, Duration: 30f,
-        Slots: 6, InputCapacity: 1, OutputCapacity: 6, OutputToStash: false);
+        Slots: 5, InputCapacity: 5, OutputCapacity: 5, OutputToStash: false);
 
     public static readonly MachineDef Cutter = new(
         "cutter", "Cutter", new Vector2I(1, 2), 1.1f, new Color(0.55f, 0.2f, 0.2f),
         new Dictionary<ItemType, int> { [ItemType.DrySheet] = 1 },
-        ItemType.LooseBills, OutputAmount: 4, Duration: 5f,
-        Slots: 1, InputCapacity: 5, OutputCapacity: 20, OutputToStash: false);
+        ItemType.BillBundle, OutputAmount: 1, Duration: 5f,
+        Slots: 1, InputCapacity: 5, OutputCapacity: 5, OutputToStash: false);
 
     /// <summary>Finished bricks go straight to the Stash.</summary>
     public static readonly MachineDef PackingTable = new(
         "packing_table", "Packing Table", new Vector2I(2, 1), 0.9f, new Color(0.45f, 0.35f, 0.25f),
-        new Dictionary<ItemType, int> { [ItemType.LooseBills] = 10 },
+        new Dictionary<ItemType, int> { [ItemType.BillBundle] = 5 },
         ItemType.CounterfeitBrick, OutputAmount: 1, Duration: 8f,
-        Slots: 1, InputCapacity: 20, OutputCapacity: 4, OutputToStash: true);
+        Slots: 1, InputCapacity: 5, OutputCapacity: 5, OutputToStash: true);
 
     public static readonly IReadOnlyList<MachineDef> All = [PrintingPress, DryingRack, Cutter, PackingTable];
 }

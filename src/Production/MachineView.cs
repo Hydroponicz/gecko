@@ -74,7 +74,7 @@ public partial class MachineView : StaticBody3D, IInteractable
         var def = State.Def;
         var text = new StringBuilder(def.Name).Append('\n');
         foreach (var input in def.Inputs.Keys)
-            text.Append($"{Items.Get(input).Name} {State.InputCount(input)}/{def.InputCapacity}  ");
+            text.Append($"{Items.Get(input).Name} {State.Loaded(input)}/{def.InputCapacity}  ");
         text.Append('\n');
         if (def.Slots > 1)
             text.Append($"Working {State.ActiveCrafts}/{def.Slots}  ");
@@ -90,6 +90,7 @@ public partial class MachineView : StaticBody3D, IInteractable
     }
 
     public bool IsAvailable => IsInstanceValid(this) && Visible;
+    public Vector3 GetAccessPoint(Vector3 from) => _facility.AccessPoint(State.Rect, from);
     public string Title => State.Def.Name;
 
     public string Status
@@ -98,7 +99,7 @@ public partial class MachineView : StaticBody3D, IInteractable
         {
             var text = new StringBuilder();
             foreach (var input in State.Def.Inputs.Keys)
-                text.Append($"{Items.Get(input).Name} {State.InputCount(input)}/{State.Def.InputCapacity}   ");
+                text.Append($"{Items.Get(input).Name} {State.Loaded(input)}/{State.Def.InputCapacity}   ");
             text.Append($"-> {Items.Get(State.Def.Output).Name}: {State.OutputCount}");
             return text.ToString();
         }

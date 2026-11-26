@@ -15,6 +15,9 @@ Status: **draft**
 Hold **Target** (L2 / LT / right mouse) to lock onto an object or (later) an NPC, then choose an
 option with the face buttons / E F Q G. Tap = one item, hold = all. In combat the same button aims.
 
+## Debug menu
+F1 / R3 opens a debug menu (debug builds only). New tools are one entry in `src/UI/DebugMenu.cs`.
+
 ## Supported controllers
 Godot reads buttons and sticks for **all** controllers (Xbox, PlayStation, Steam Input, generic),
 using its built-in SDL controller database. We do not write our own button reading:

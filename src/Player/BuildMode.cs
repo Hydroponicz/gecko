@@ -50,7 +50,7 @@ public partial class BuildMode : Node
     }
 
     /// <summary>True when the player stands in a facility and could open build mode.</summary>
-    public bool CanEnter() => !Active && CurrentFacility() != null;
+    public bool CanEnter() => !Active && !_player.IsLocked && CurrentFacility() != null;
 
     public override void _PhysicsProcess(double delta)
     {
@@ -58,7 +58,7 @@ public partial class BuildMode : Node
         {
             if (Active)
                 Exit();
-            else if (CurrentFacility() is { } facility)
+            else if (!_player.IsLocked && CurrentFacility() is { } facility)
                 Enter(facility);
         }
 

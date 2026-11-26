@@ -59,25 +59,25 @@ The Stash is also a valid worker route point (e.g. "Stash → Printing Press").
 
 ```
 [Paper] ─┐
-         ├─► PRINTING PRESS ─► [Wet Sheet] ─► DRYING RACK ─► [Dry Sheet] ─► CUTTER ─► [Loose Bills] ─► PACKING TABLE ─► [Counterfeit Brick]
+         ├─► PRINTING PRESS ─► [Wet Sheet] ─► DRYING RACK ─► [Dry Sheet] ─► CUTTER ─► [Bill Bundle] ─► PACKING TABLE ─► [Counterfeit Brick]
 [Ink] ───┘
 ```
+
+**Design rule (changed 2026-11-26): everything is 5.** Every machine holds up to 5 of each input
+(counting what it's working on) and 5 of its output, and you carry up to 5 of any item. The game is
+about immersion and fun, not ratio optimisation.
 
 | Machine        | Input            | Output              | Time  | Notes |
 |----------------|------------------|---------------------|-------|-------|
 | Printing Press | 1 Paper + 1 Ink  | 1 Wet Sheet         | 10s   | |
-| Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Holds 6 sheets at once, each dries on its own timer — a capacity puzzle, not a speed one |
-| Cutter         | 1 Dry Sheet      | 4 Loose Bills       | 5s    | |
-| Packing Table  | 10 Loose Bills   | 1 Counterfeit Brick | 8s    | A brick = banded block of banknotes |
+| Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Hangs up to 5 sheets, each drying on its own timer |
+| Cutter         | 1 Dry Sheet      | 1 Bill Bundle       | 5s    | |
+| Packing Table  | 5 Bill Bundles   | 1 Counterfeit Brick | 8s    | Brick = banded block of banknotes; goes to the Stash by itself |
 
-All numbers are placeholders to be tuned in play. Live values: `src/Production/Machines.cs`.
+So 5 Paper + 5 Ink = 1 brick. Durations are placeholders. Live values: `src/Production/Machines.cs`.
 
-### Carry limits (per item type, one type at a time)
-| Item | Max carried |
-|---|---|
-| Paper, Ink, Wet Sheet, Dry Sheet | 5 |
-| Loose Bills | 20 (small bundles) |
-| Counterfeit Brick | 4 (bricks of banknotes) |
+### Carry limits
+Up to 5 of one item type at a time.
 
 ### Build mode
 - Only available while standing inside a facility (frees the button elsewhere).
@@ -93,7 +93,12 @@ All numbers are placeholders to be tuned in play. Live values: `src/Production/M
   (Square/Triangle/Circle/Cross, X/Y/B/A, E/F/Q/G).
 - Unavailable options stay visible, greyed out, with the reason ("none in hand", "machine full"),
   so players learn what each machine needs.
+- Target picks the **closest** object to the player (nearest edge), not where the camera points.
 - **Tap** an option = move 1 item. **Hold** it (~0.45s, a bar fills) = move as many as possible.
+- Choosing an option **locks the player into an action**: the character walks to the object,
+  turns to it and performs the action (placeholder lean until real animations); items transfer at
+  the moment of the put-down. Movement input is ignored until it finishes. If the way is blocked
+  for 3s, it's done from where they stand (if in reach) or cancelled.
 - The same Target button will aim weapons in combat and give NPC options later.
 - The Stash is a row of 4 shelves inside the door; each shelf holds one item type (50 max).
 

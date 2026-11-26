@@ -13,7 +13,7 @@ namespace Gecko.Actors;
 /// </summary>
 public partial class PlayerInteraction : Node
 {
-    private const float MaxReach = 1.6f; // metres beyond the object's own radius
+    private const float MaxReach = 1.6f; // metres from the spot where you would stand to use it
     private const float LoseReach = 2.5f; // a locked target is dropped beyond this
     private const float HoldTime = 0.45f;
 
@@ -21,7 +21,23 @@ public partial class PlayerInteraction : Node
     private BuildMode _buildMode = null!;
     private Node3D _carryAnchor = null!;
 
+    private const float WalkTimeout = 3f;
+    private const float ArriveDistance = 0.15f;
+
     private IInteractable? _target; // locked while Target is held
+    private ActionTask? _task; // the walk-over-and-do-it action in progress
+
+    /// <summary>An option the player chose: walk to the object, then perform it.</summary>
+    private sealed class ActionTask(IInteractable target, string optionLabel, int amount)
+    {
+        public IInteractable Target { get; } = target;
+        public string OptionLabel { get; } = optionLabel;
+        public int Amount { get; } = amount;
+        public bool Walking { get; set; } = true;
+        public float Timer { get; set; }
+        public float Duration { get; set; }
+        public bool Applied { get; set; }
+    }
     private int _pressedSlot = -1;
     private float _pressedTime;
     private bool _holdDone;
@@ -30,6 +46,9 @@ public partial class PlayerInteraction : Node
 
     /// <summary>True while the player holds Target on something. Option buttons are taken then.</summary>
     public bool IsTargeting => _target != null;
+
+    /// <summary>True while the character is walking to an object or performing an action on it.</summary>
+    public bool IsBusy => _task != null;
 
     public override void _Ready()
     {
@@ -41,10 +60,16 @@ public partial class PlayerInteraction : Node
 
     public override void _PhysicsProcess(double delta)
     {
-        if (_buildMode.Active)
+        if (_buildMode.Active && _task == null)
         {
             SetTarget(null);
             GameHud.Instance.SetMenu(null);
+            return;
+        }
+
+        if (_task != null)
+        {
+            UpdateTask((float)delta);
             return;
         }
 
@@ -111,6 +136,7 @@ public partial class PlayerInteraction : Node
         _pressedSlot = -1;
     }
 
+    /// <summary>Starts the chosen option: the player is locked, walks over, then performs it.</summary>
     private void Execute(int slot, int amount)
     {
         if (_target == null)
@@ -118,8 +144,81 @@ public partial class PlayerInteraction : Node
         var options = _target.GetOptions(Carry);
         if (slot >= options.Count || !options[slot].Enabled)
             return;
-        if (options[slot].Execute(amount) > 0)
-            Gamepad.Instance.Rumble(0.15f, 0f, 0.05f);
+
+        var target = _target;
+        SetTarget(null);
+        target.SetHighlighted(true);
+        _task = new ActionTask(target, options[slot].Label, amount);
+        _player.IsLocked = true;
+        _player.ScriptedMoveTarget = target.GetAccessPoint(_player.GlobalPosition);
+        GameHud.Instance.SetMenu(null);
+        GameHud.Instance.SetPrompt($"{options[slot].Label}...");
+    }
+
+    private void UpdateTask(float delta)
+    {
+        var task = _task!;
+        if (!task.Target.IsAvailable)
+        {
+            EndTask();
+            return;
+        }
+        task.Timer += delta;
+
+        if (task.Walking)
+        {
+            var toSpot = _player.ScriptedMoveTarget!.Value - _player.GlobalPosition;
+            toSpot.Y = 0f;
+            bool arrived = toSpot.Length() < ArriveDistance;
+            // Blocked on the way: if we're still close enough to reach it, just do it from here.
+            bool stuck = task.Timer > WalkTimeout;
+            if (stuck && DistanceTo(task.Target) > MaxReach)
+            {
+                EndTask();
+                return;
+            }
+            if (arrived || stuck)
+            {
+                task.Walking = false;
+                task.Timer = 0f;
+                // Placeholder timing until real animations: longer when moving more items.
+                int moving = Mathf.Min(task.Amount, 5);
+                task.Duration = 0.6f + 0.15f * (moving - 1);
+                _player.ScriptedMoveTarget = null;
+            }
+            return;
+        }
+
+        // Performing: face the object, lean in, items move at the halfway point.
+        _player.FaceTowards(task.Target.InteractPosition, delta);
+        float t = Mathf.Clamp(task.Timer / task.Duration, 0f, 1f);
+        _player.SetLean(Mathf.Sin(t * Mathf.Pi));
+        if (!task.Applied && t >= 0.5f)
+        {
+            task.Applied = true;
+            foreach (var option in task.Target.GetOptions(Carry))
+            {
+                if (option.Label == task.OptionLabel && option.Enabled)
+                {
+                    if (option.Execute(task.Amount) > 0)
+                        Gamepad.Instance.Rumble(0.15f, 0f, 0.05f);
+                    break;
+                }
+            }
+        }
+        if (t >= 1f)
+            EndTask();
+    }
+
+    private void EndTask()
+    {
+        if (_task is { Target.IsAvailable: true })
+            _task.Target.SetHighlighted(false);
+        _task = null;
+        _player.SetLean(0f);
+        _player.ScriptedMoveTarget = null;
+        _player.IsLocked = false;
+        _pressedSlot = -1;
     }
 
     private void UpdateHud()
@@ -148,25 +247,25 @@ public partial class PlayerInteraction : Node
         GameHud.Instance.SetPrompt(string.Join("\n", new[] { carrying, hint, build }).Trim('\n'));
     }
 
+    /// <summary>
+    /// Distance from the player to the object's nearest edge (its access spot), so long machines
+    /// count as close when you stand by any side. Ties go to the nearer centre.
+    /// </summary>
     private float DistanceTo(IInteractable target)
     {
-        var offset = target.InteractPosition - _player.GlobalPosition;
-        offset.Y = 0f;
-        return offset.Length() - target.InteractRadius;
+        var pos = _player.GlobalPosition;
+        var toEdge = target.GetAccessPoint(pos) - pos;
+        toEdge.Y = 0f;
+        var toCenter = target.InteractPosition - pos;
+        toCenter.Y = 0f;
+        return toEdge.Length() + toCenter.Length() * 0.01f;
     }
 
-    /// <summary>Picks the interactable the camera is most pointed at, within reach.</summary>
+    /// <summary>Picks the interactable closest to the player, within reach.</summary>
     private IInteractable? FindTarget()
     {
-        var camera = GetViewport().GetCamera3D();
-        if (camera == null)
-            return null;
-        var forward = -camera.GlobalBasis.Z;
-        forward.Y = 0f;
-        forward = forward.Normalized();
-
         IInteractable? best = null;
-        float bestScore = float.MinValue;
+        float bestDistance = float.MaxValue;
         foreach (var node in GetTree().GetNodesInGroup(FacilityNode.Group))
         {
             if (node is not FacilityNode facility)
@@ -174,17 +273,9 @@ public partial class PlayerInteraction : Node
             foreach (var candidate in facility.Interactables())
             {
                 float distance = DistanceTo(candidate);
-                if (distance > MaxReach)
-                    continue;
-                var offset = candidate.InteractPosition - _player.GlobalPosition;
-                offset.Y = 0f;
-                float facing = offset.LengthSquared() > 0.0001f ? forward.Dot(offset.Normalized()) : 1f;
-                if (facing < 0.3f && distance > 0.3f)
-                    continue;
-                float score = facing - distance * 0.5f;
-                if (score > bestScore)
+                if (distance <= MaxReach && distance < bestDistance)
                 {
-                    bestScore = score;
+                    bestDistance = distance;
                     best = candidate;
                 }
             }

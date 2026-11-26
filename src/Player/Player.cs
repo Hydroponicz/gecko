@@ -1,4 +1,5 @@
 using Gecko.Core;
+using Gecko.UI;
 using Godot;
 
 namespace Gecko.Actors;
@@ -9,6 +10,8 @@ namespace Gecko.Actors;
 /// </summary>
 public partial class Player : CharacterBody3D
 {
+    public const string Group = "player";
+
     [ExportGroup("Movement")]
     [Export] public float WalkSpeed { get; set; } = 4f;
     [Export] public float SprintSpeed { get; set; } = 7.5f;
@@ -38,6 +41,29 @@ public partial class Player : CharacterBody3D
     private bool _sprintToggled;
     private bool _wasOnFloor = true;
 
+    /// <summary>
+    /// While locked the player ignores movement input (camera stays free). Used for interaction
+    /// "animations": the character walks to <see cref="ScriptedMoveTarget"/> and performs an action.
+    /// </summary>
+    public bool IsLocked { get; set; }
+
+    /// <summary>World position to walk to while locked, or null to stand still.</summary>
+    public Vector3? ScriptedMoveTarget { get; set; }
+
+    /// <summary>Turns the body toward a world position (used while performing an action).</summary>
+    public void FaceTowards(Vector3 worldPosition, float delta)
+    {
+        var offset = worldPosition - GlobalPosition;
+        if (new Vector2(offset.X, offset.Z).LengthSquared() < 0.0001f)
+            return;
+        float targetYaw = Mathf.Atan2(-offset.X, -offset.Z);
+        _model.Rotation = _model.Rotation with { Y = Mathf.LerpAngle(_model.Rotation.Y, targetYaw, TurnSpeed * delta) };
+    }
+
+    /// <summary>Placeholder action pose until real animations exist: leans the body forward (0..1).</summary>
+    public void SetLean(float amount) =>
+        _model.Rotation = _model.Rotation with { X = -0.45f * Mathf.Clamp(amount, 0f, 1f) };
+
     public override void _Ready()
     {
         _model = GetNode<Node3D>("Model");
@@ -47,6 +73,7 @@ public partial class Player : CharacterBody3D
         _buildMode = GetNode<BuildMode>("BuildMode");
         _interaction = GetNode<PlayerInteraction>("PlayerInteraction");
 
+        AddToGroup(Group);
         _gravity = (float)ProjectSettings.GetSetting("physics/3d/default_gravity");
         _springArm.AddExcludedObject(GetRid());
         _pitch.Rotation = _pitch.Rotation with { X = Mathf.DegToRad(StartPitchDegrees) };
@@ -86,19 +113,32 @@ public partial class Player : CharacterBody3D
         if (!IsOnFloor())
             velocity.Y -= _gravity * dt;
         // Cross is "place" in build mode and option 4 while targeting.
-        else if (Input.IsActionJustPressed(Actions.Jump) && !_buildMode.Active && !_interaction.IsTargeting)
+        else if (Input.IsActionJustPressed(Actions.Jump) && !IsLocked && !_buildMode.Active && !_interaction.IsTargeting
+                 && !DebugMenu.IsOpen)
             velocity.Y = JumpVelocity;
 
         // Movement relative to where the camera faces. Analog sticks keep their partial tilt.
         Vector2 moveInput = Input.GetVector(Actions.MoveLeft, Actions.MoveRight, Actions.MoveForward, Actions.MoveBack);
         var cameraYaw = new Basis(Vector3.Up, _yaw.GlobalRotation.Y);
         Vector3 direction = cameraYaw * new Vector3(moveInput.X, 0f, moveInput.Y);
+        if (IsLocked)
+        {
+            moveInput = Vector2.Zero;
+            direction = Vector3.Zero;
+            if (ScriptedMoveTarget is { } target)
+            {
+                var toTarget = target - GlobalPosition;
+                toTarget.Y = 0f;
+                // Full speed until close, then ease in so we stop on the spot.
+                direction = toTarget.Length() > 0.05f ? toTarget.Normalized() * Mathf.Min(1f, toTarget.Length() * 3f) : Vector3.Zero;
+            }
+        }
 
         if (Input.IsActionJustPressed(Actions.SprintToggle))
             _sprintToggled = !_sprintToggled;
         if (moveInput.Length() < 0.1f)
             _sprintToggled = false;
-        bool sprinting = Input.IsActionPressed(Actions.Sprint) || _sprintToggled;
+        bool sprinting = !IsLocked && (Input.IsActionPressed(Actions.Sprint) || _sprintToggled);
         float speed = sprinting ? SprintSpeed : WalkSpeed;
 
         var horizontal = new Vector3(velocity.X, 0f, velocity.Z)

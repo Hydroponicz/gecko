@@ -40,5 +40,5 @@ public static class Actions
     public static readonly StringName BuildRemove = "build_remove";
     public static readonly StringName BuildMove = "build_move";
 
-    public static readonly StringName DebugLightbar = "debug_lightbar";
+    public static readonly StringName DebugMenu = "debug_menu";
 }

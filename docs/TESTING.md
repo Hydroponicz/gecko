@@ -20,13 +20,15 @@ The warehouse is the brick-walled room behind the spawn (walk forward-right). Th
 
 **Targeting & carrying** (outside build mode)
 - [ ] Near a shelf or machine, the bottom prompt shows `[RMB / L2 / LT] Interact`.
-- [ ] Hold RMB / L2 / LT: the object you're facing lights up and a menu appears bottom-right.
+- [ ] Hold RMB / L2 / LT: the **closest** shelf/machine lights up and a menu appears bottom-right.
 - [ ] Each option shows its button (E/F/Q/G, Square/Triangle/Circle/Cross, X/Y/B/A).
 - [ ] Options you can't do are greyed out with a reason (e.g. "Load Ink (none in hand)").
 - [ ] **Tap** an option: exactly one item moves (you can take ink one at a time).
 - [ ] **Hold** an option: a bar fills, then as many items as possible move.
 - [ ] Stash shelf shows both "Take" and "Store", so you can top up what you're carrying.
 - [ ] You can't jump with Cross/A while targeting.
+- [ ] Choosing an option: your character walks to the object, turns, leans in, and the items move
+      as they lean in. You can't move until it's done (camera still works).
 - [ ] Only one item type can be carried; carried items stack in front of you.
 - [ ] Counterfeit bricks look like green banded bricks of banknotes.
 
@@ -40,9 +42,16 @@ The warehouse is the brick-walled room behind the spawn (walk forward-right). Th
 
 **The chain**
 - [ ] Press: load Paper and Ink -> makes Wet Sheets (10s each).
-- [ ] Drying Rack: load Wet Sheets -> up to 6 dry at once (30s each) -> Dry Sheets.
-- [ ] Cutter: Dry Sheet -> 4 Loose Bills (5s).
-- [ ] Packing Table: 10 Loose Bills -> Counterfeit Brick (8s) which appears in the Stash by itself.
+- [ ] Drying Rack: load up to 5 Wet Sheets, all dry at once (30s each) -> Dry Sheets.
+- [ ] Cutter: Dry Sheet -> Bill Bundle (5s).
+- [ ] Packing Table: 5 Bill Bundles -> Counterfeit Brick (8s) which appears in the Stash by itself.
+- [ ] Every machine holds max 5 of each input and 5 output; you carry max 5.
 - [ ] Each machine's label shows inputs, progress and output; finished items sit on top of the machine.
 
 Nothing is saved yet: the factory resets every run.
+
+## Debug menu (any level, editor runs only)
+- F1 / R3 (click right stick) opens it. Arrow keys / D-pad up-down select, left-right change, Enter / Cross / A use.
+- Give 5 of any item, drop carried items, refill the Stash, game speed x1/x2/x5/x10,
+  fast-forward machines 60s, test lightbar + rumble (moved here from T / Triangle).
+- Controller info (name, lightbar/rumble/motion support) is shown in the menu.

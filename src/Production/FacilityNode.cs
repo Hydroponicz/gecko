@@ -76,6 +76,23 @@ public partial class FacilityNode : Node3D
         return new Transform3D(new Basis(Vector3.Up, rotation * Mathf.Pi / 2f), center);
     }
 
+    /// <summary>
+    /// The closest spot next to a block of cells, as seen from <paramref name="fromWorld"/>:
+    /// where a character stands to use a machine or shelf.
+    /// </summary>
+    public Vector3 AccessPoint(Rect2I cells, Vector3 fromWorld, float margin = 0.45f)
+    {
+        var local = ToLocal(fromWorld);
+        float minX = cells.Position.X * CellSize - margin;
+        float maxX = cells.End.X * CellSize + margin;
+        float minZ = cells.Position.Y * CellSize - margin;
+        float maxZ = cells.End.Y * CellSize + margin;
+        var point = new Vector3(Mathf.Clamp(local.X, minX, maxX), 0f, Mathf.Clamp(local.Z, minZ, maxZ));
+        var world = ToGlobal(point);
+        world.Y = fromWorld.Y;
+        return world;
+    }
+
     public MachineView? ViewFor(MachineState machine) => _views.GetValueOrDefault(machine);
 
     public IEnumerable<IInteractable> Interactables()
@@ -188,7 +205,7 @@ public partial class FacilityNode : Node3D
                 Position = new Vector3(area.Position.X + i + 0.5f, 0f, area.Position.Y + 0.5f) * CellSize,
             };
             AddChild(slot);
-            slot.Setup(this, i);
+            slot.Setup(this, i, new Vector2I(area.Position.X + i, area.Position.Y));
             _stashViews.Add(slot);
         }
     }

@@ -10,6 +10,7 @@ public partial class StashSlotView : StaticBody3D, IInteractable
 
     private FacilityNode _facility = null!;
     private int _index;
+    private Vector2I _cell;
     private Label3D _label = null!;
     private Node3D _display = null!;
     private ItemType? _shownType;
@@ -21,10 +22,11 @@ public partial class StashSlotView : StaticBody3D, IInteractable
 
     private StashSlot Slot => _facility.State.Stash.Slots[_index];
 
-    public void Setup(FacilityNode facility, int index)
+    public void Setup(FacilityNode facility, int index, Vector2I cell)
     {
         _facility = facility;
         _index = index;
+        _cell = cell;
         var size = new Vector3(0.9f, ShelfHeight, 0.8f);
         _material = new StandardMaterial3D { AlbedoColor = new Color(0.3f, 0.3f, 0.32f) };
         AddChild(new MeshInstance3D
@@ -63,6 +65,7 @@ public partial class StashSlotView : StaticBody3D, IInteractable
     }
 
     public bool IsAvailable => IsInstanceValid(this);
+    public Vector3 GetAccessPoint(Vector3 from) => _facility.AccessPoint(new Rect2I(_cell, Vector2I.One), from);
     public string Title => Slot.Type is { } type ? $"Stash - {Items.Get(type).Name}" : "Stash - empty shelf";
     public string Status => Slot.Type != null ? $"{Slot.Count} / {StashState.SlotCapacity}" : "Store anything you're carrying";
 
