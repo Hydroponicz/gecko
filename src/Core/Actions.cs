@@ -22,6 +22,7 @@ public static class Actions
     public static readonly StringName LookDown = "look_down";
 
     public static readonly StringName Pause = "pause";
+    public static readonly StringName ShowBalance = "show_balance";
 
     // Targeting (RDR2-style): hold to target, then pick an option.
     public static readonly StringName Target = "target";

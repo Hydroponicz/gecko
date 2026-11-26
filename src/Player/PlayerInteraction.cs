@@ -1,6 +1,9 @@
+using System.Collections.Generic;
 using Gecko.Core;
+using Gecko.Economy;
 using Gecko.Production;
 using Gecko.UI;
+using Gecko.World;
 using Godot;
 
 namespace Gecko.Actors;
@@ -20,6 +23,8 @@ public partial class PlayerInteraction : Node
     private Player _player = null!;
     private BuildMode _buildMode = null!;
     private Node3D _carryAnchor = null!;
+    private Node3D _bagAnchor = null!;
+    private Interactor _who = null!;
 
     private const float WalkTimeout = 3f;
     private const float ArriveDistance = 0.15f;
@@ -55,11 +60,36 @@ public partial class PlayerInteraction : Node
         _player = GetParent<Player>();
         _buildMode = _player.GetNode<BuildMode>("BuildMode");
         _carryAnchor = _player.GetNode<Node3D>("Model/CarryAnchor");
-        Carry.Changed += () => ItemVisuals.BuildStack(_carryAnchor, Carry.Type, Carry.Count);
+        _bagAnchor = _player.GetNode<Node3D>("Model/BagAnchor");
+        _who = new Interactor(Carry, _player.Wallet);
+        Carry.Changed += UpdateCarryVisuals;
+        _player.Wallet.Changed += (dirty, clean) => ShowMoney(dirty + clean);
+    }
+
+    /// <summary>Items are carried in front; duffel bags go on the back.</summary>
+    private void UpdateCarryVisuals()
+    {
+        bool bags = Carry.Type == ItemType.DuffelBag;
+        ItemVisuals.BuildStack(_carryAnchor, bags ? null : Carry.Type, Carry.Count);
+        ItemVisuals.BuildStack(_bagAnchor, bags ? ItemType.DuffelBag : null, Carry.Count);
+    }
+
+    /// <summary>Shows balances for a few seconds (on change, or when the player asks).</summary>
+    private void ShowMoney(int change = 0)
+    {
+        var lines = new List<string> { Money.Format(_player.Wallet.Dirty), $"Bank  {Money.Format(_player.Wallet.Clean)}" };
+        if (Carry.Type == ItemType.DuffelBag)
+            lines.Add($"Bags  {Money.Format(Carry.TotalBagCash)}");
+        if (change != 0)
+            lines.Add(change > 0 ? $"+{Money.Format(change)}" : Money.Format(change));
+        GameHud.Instance.ShowMoney(string.Join("\n", lines));
     }
 
     public override void _PhysicsProcess(double delta)
     {
+        if (Input.IsActionJustPressed(Actions.ShowBalance))
+            ShowMoney();
+
         if (_buildMode.Active && _task == null)
         {
             SetTarget(null);
@@ -141,7 +171,7 @@ public partial class PlayerInteraction : Node
     {
         if (_target == null)
             return;
-        var options = _target.GetOptions(Carry);
+        var options = _target.GetOptions(_who);
         if (slot >= options.Count || !options[slot].Enabled)
             return;
 
@@ -196,7 +226,7 @@ public partial class PlayerInteraction : Node
         if (!task.Applied && t >= 0.5f)
         {
             task.Applied = true;
-            foreach (var option in task.Target.GetOptions(Carry))
+            foreach (var option in task.Target.GetOptions(_who))
             {
                 if (option.Label == task.OptionLabel && option.Enabled)
                 {
@@ -223,11 +253,17 @@ public partial class PlayerInteraction : Node
 
     private void UpdateHud()
     {
-        string carrying = Carry.Type is { } type ? $"Carrying: {Items.Get(type).Name} x{Carry.Count}" : "";
+        string carrying = Carry.Type switch
+        {
+            null => "",
+            ItemType.DuffelBag => $"Carrying: {Carry.Count} duffel bag(s), {Money.Format(Carry.TotalBagCash)}" +
+                                  (Carry.IsEncumbered ? "  (weighed down)" : ""),
+            { } type => $"Carrying: {Items.Get(type).Name} x{Carry.Count}",
+        };
 
         if (_target != null)
         {
-            var options = _target.GetOptions(Carry);
+            var options = _target.GetOptions(_who);
             var rows = new GameHud.MenuRow[Mathf.Min(options.Count, GameHud.MenuRows)];
             for (int i = 0; i < rows.Length; i++)
             {
@@ -271,15 +307,23 @@ public partial class PlayerInteraction : Node
             if (node is not FacilityNode facility)
                 continue;
             foreach (var candidate in facility.Interactables())
-            {
-                float distance = DistanceTo(candidate);
-                if (distance <= MaxReach && distance < bestDistance)
-                {
-                    bestDistance = distance;
-                    best = candidate;
-                }
-            }
+                Consider(candidate);
+        }
+        foreach (var node in GetTree().GetNodesInGroup(PayphoneNode.InteractablesGroup))
+        {
+            if (node is IInteractable candidate)
+                Consider(candidate);
         }
         return best;
+
+        void Consider(IInteractable candidate)
+        {
+            float distance = DistanceTo(candidate);
+            if (distance <= MaxReach && distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = candidate;
+            }
+        }
     }
 }

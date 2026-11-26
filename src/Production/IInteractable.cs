@@ -1,15 +1,23 @@
 using System;
 using System.Collections.Generic;
+using Gecko.Economy;
 using Godot;
 
 namespace Gecko.Production;
+
+/// <summary>Whoever is interacting (the player now, workers or co-op players later).</summary>
+public sealed class Interactor(CarryState carry, Wallet wallet)
+{
+    public CarryState Carry { get; } = carry;
+    public Wallet Wallet { get; } = wallet;
+}
 
 /// <summary>
 /// One choice in the targeting menu, e.g. "Load Ink".
 /// Disabled options are still shown (greyed out) with <see cref="Detail"/> explaining why,
 /// so players learn what each object needs.
 /// </summary>
-/// <param name="Execute">Moves up to the given number of items; returns how many moved.</param>
+/// <param name="Execute">Called with 1 for a tap or int.MaxValue for a hold; returns how much happened (0 = nothing).</param>
 public sealed record InteractOption(string Label, bool Enabled, string Detail, Func<int, int> Execute);
 
 /// <summary>Something the player can target (hold L2 / LT / right mouse) and pick options for.</summary>
@@ -34,7 +42,7 @@ public interface IInteractable
     string Status { get; }
 
     /// <summary>Up to 4 options, in button order.</summary>
-    IReadOnlyList<InteractOption> GetOptions(CarryState carry);
+    IReadOnlyList<InteractOption> GetOptions(Interactor who);
 
     void SetHighlighted(bool highlighted);
 }

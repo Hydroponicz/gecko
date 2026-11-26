@@ -12,6 +12,26 @@ Status: **draft**
 clean money. Laundering is how you stop overpaying. The game is a criminal economic sandbox:
 many ways to make money, each with its own margins and risks.
 
+## Cash on you vs physical cash
+- **Wallet:** dirty cash on your person is just a number, capped at **$5,000**.
+- **Big amounts are physical:**
+  - At a property, dirty cash sits on the **cash table** next to the Stash as visible **$1,000 stacks**.
+  - It moves around in **duffel bags** (up to **$10,000** each). You carry up to **3 bags** on your back.
+  - Carrying 3 bags weighs you down: no sprinting, no jumping, and (once weapons exist) no shooting.
+  - Bags can go in vehicles (vehicles step).
+- If you receive more than your wallet holds (robbery, sale), the rest goes into duffel bags you carry.
+- Cash table options: deposit from wallet, take to wallet, pack duffel bag, unpack bags
+  (tap = $1,000 or one bag, hold = all).
+- Later: workers' wages come from the cash table; laundering businesses take bags and pay into the bank.
+- **Clean money** is a bank balance (a number), unused until laundering exists.
+- Balances show top-right for a few seconds when they change, or press **Z / D-pad down**.
+
+## Buying supplies
+- Call the supplier from a **pay phone** in the street or a **landline** you place in build mode.
+- Orders: 5 Paper ($100), 5 Ink ($100), or both ($200), paid from your wallet (dirty prices, placeholders).
+- Delivered to the property's Stash after ~30 seconds; the phone shows a countdown.
+- Pay phone orders go to your (only) property; with several properties you'll pick one.
+
 ## Early game: starting from nothing
 1. The player robs **convenience stores, gas stations and fast-food places** for their first dirty money.
 2. They meet a **shady contact** who sells them their first property for dirty money, at a price

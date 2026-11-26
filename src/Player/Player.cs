@@ -1,4 +1,5 @@
 using Gecko.Core;
+using Gecko.Economy;
 using Gecko.UI;
 using Godot;
 
@@ -11,6 +12,9 @@ namespace Gecko.Actors;
 public partial class Player : CharacterBody3D
 {
     public const string Group = "player";
+
+    /// <summary>This player's money (wallet cash + bank).</summary>
+    public Wallet Wallet { get; } = new(Money.StartingDirty);
 
     [ExportGroup("Movement")]
     [Export] public float WalkSpeed { get; set; } = 4f;
@@ -114,6 +118,7 @@ public partial class Player : CharacterBody3D
             velocity.Y -= _gravity * dt;
         // Cross is "place" in build mode and option 4 while targeting.
         else if (Input.IsActionJustPressed(Actions.Jump) && !IsLocked && !_buildMode.Active && !_interaction.IsTargeting
+                 && !_interaction.Carry.IsEncumbered
                  && !DebugMenu.IsOpen)
             velocity.Y = JumpVelocity;
 
@@ -138,7 +143,9 @@ public partial class Player : CharacterBody3D
             _sprintToggled = !_sprintToggled;
         if (moveInput.Length() < 0.1f)
             _sprintToggled = false;
-        bool sprinting = !IsLocked && (Input.IsActionPressed(Actions.Sprint) || _sprintToggled);
+        // Three duffel bags weigh you down: no sprinting or jumping (and no shooting, once weapons exist).
+        bool sprinting = !IsLocked && !_interaction.Carry.IsEncumbered
+                         && (Input.IsActionPressed(Actions.Sprint) || _sprintToggled);
         float speed = sprinting ? SprintSpeed : WalkSpeed;
 
         var horizontal = new Vector3(velocity.X, 0f, velocity.Z)

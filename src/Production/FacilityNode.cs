@@ -18,9 +18,11 @@ public partial class FacilityNode : Node3D
     private const int StashSlots = 4;
 
     [Export] public Vector2I SizeCells { get; set; } = new(14, 10);
+    [Export] public string DisplayName { get; set; } = "Counterfeit Factory";
 
     private readonly Dictionary<MachineState, MachineView> _views = new();
     private readonly List<StashSlotView> _stashViews = [];
+    private CashSpotView _cashSpot = null!;
     private Node3D _grid = null!;
 
     public FacilityState State { get; private set; } = null!;
@@ -35,9 +37,10 @@ public partial class FacilityNode : Node3D
     {
         AddToGroup(Group);
 
-        // Stash: a row of shelves just inside the door, on its left.
+        // Stash: a row of shelves plus a cash table just inside the door, on its left.
         int doorStart = SizeCells.X / 2 - DoorWidth / 2;
-        var stashArea = new Rect2I(Mathf.Max(0, doorStart - StashSlots), SizeCells.Y - 1, StashSlots, 1);
+        int stashWidth = StashSlots + 1;
+        var stashArea = new Rect2I(Mathf.Max(0, doorStart - stashWidth), SizeCells.Y - 1, stashWidth, 1);
         State = new FacilityState(SizeCells, stashArea, StashSlots);
 
         // Test supplies until buying supplies exists (roadmap step 3).
@@ -104,6 +107,7 @@ public partial class FacilityNode : Node3D
         }
         foreach (var view in _stashViews)
             yield return view;
+        yield return _cashSpot;
     }
 
     private void OnMachineAdded(MachineState machine)
@@ -208,5 +212,13 @@ public partial class FacilityNode : Node3D
             slot.Setup(this, i, new Vector2I(area.Position.X + i, area.Position.Y));
             _stashViews.Add(slot);
         }
+        var cashCell = new Vector2I(area.Position.X + StashSlots, area.Position.Y);
+        _cashSpot = new CashSpotView
+        {
+            Name = "CashTable",
+            Position = new Vector3(cashCell.X + 0.5f, 0f, cashCell.Y + 0.5f) * CellSize,
+        };
+        AddChild(_cashSpot);
+        _cashSpot.Setup(this, cashCell);
     }
 }

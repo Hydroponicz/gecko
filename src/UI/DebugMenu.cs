@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Gecko.Actors;
 using Gecko.Core;
+using Gecko.Economy;
 using Gecko.Production;
 using Godot;
 
@@ -53,12 +54,27 @@ public partial class DebugMenu : CanvasLayer
 
     private void BuildEntries()
     {
-        var items = (ItemType[])Enum.GetValues(typeof(ItemType));
+        var items = Items.Production;
+        int[] cashAmounts = [500, 1_000, 5_000, 15_000, 35_000];
+        int cashIndex = 1;
 
         _entries.Add(new Entry(
             () => $"Give 5:  < {Items.Get(items[_itemIndex]).Name} >",
             () => GiveCarry(items[_itemIndex], 5),
             dir => _itemIndex = (_itemIndex + dir + items.Length) % items.Length));
+        _entries.Add(new Entry(
+            () => $"Give dirty cash:  < {Money.Format(cashAmounts[cashIndex])} >",
+            () =>
+            {
+                if (GetTree().GetFirstNodeInGroup(Player.Group) is not Player player)
+                    return;
+                var carry = player.GetNode<PlayerInteraction>("PlayerInteraction").Carry;
+                int lost = Money.ReceiveDirtyCash(player.Wallet, carry, cashAmounts[cashIndex]);
+                _lastMessage = lost > 0
+                    ? $"Gave {Money.Format(cashAmounts[cashIndex])} ({Money.Format(lost)} didn't fit: wallet + 3 bags full, or hands busy)"
+                    : $"Gave {Money.Format(cashAmounts[cashIndex])} (wallet first, the rest in duffel bags)";
+            },
+            dir => cashIndex = (cashIndex + dir + cashAmounts.Length) % cashAmounts.Length));
         _entries.Add(new Entry(() => "Drop what you're carrying", () =>
         {
             if (PlayerCarry() is { } carry)
@@ -82,7 +98,7 @@ public partial class DebugMenu : CanvasLayer
                 _timeIndex = Mathf.Clamp(_timeIndex + dir, 0, TimeScales.Length - 1);
                 Engine.TimeScale = TimeScales[_timeIndex];
             }));
-        _entries.Add(new Entry(() => "Fast-forward machines 60s", () =>
+        _entries.Add(new Entry(() => "Fast-forward machines & deliveries 60s", () =>
         {
             foreach (var facility in Facilities())
                 facility.State.Tick(60f);

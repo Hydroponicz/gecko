@@ -72,6 +72,11 @@ public partial class MachineView : StaticBody3D, IInteractable
     public override void _Process(double delta)
     {
         var def = State.Def;
+        if (def.Kind == MachineKind.Phone)
+        {
+            _label.Text = $"{def.Name}\n{PhoneMenu.Status(_facility)}";
+            return;
+        }
         var text = new StringBuilder(def.Name).Append('\n');
         foreach (var input in def.Inputs.Keys)
             text.Append($"{Items.Get(input).Name} {State.Loaded(input)}/{def.InputCapacity}  ");
@@ -91,12 +96,14 @@ public partial class MachineView : StaticBody3D, IInteractable
 
     public bool IsAvailable => IsInstanceValid(this) && Visible;
     public Vector3 GetAccessPoint(Vector3 from) => _facility.AccessPoint(State.Rect, from);
-    public string Title => State.Def.Name;
+    public string Title => State.Def.Kind == MachineKind.Phone ? "Landline - Supplier" : State.Def.Name;
 
     public string Status
     {
         get
         {
+            if (State.Def.Kind == MachineKind.Phone)
+                return PhoneMenu.Status(_facility);
             var text = new StringBuilder();
             foreach (var input in State.Def.Inputs.Keys)
                 text.Append($"{Items.Get(input).Name} {State.Loaded(input)}/{State.Def.InputCapacity}   ");
@@ -105,8 +112,11 @@ public partial class MachineView : StaticBody3D, IInteractable
         }
     }
 
-    public IReadOnlyList<InteractOption> GetOptions(CarryState carry)
+    public IReadOnlyList<InteractOption> GetOptions(Interactor who)
     {
+        if (State.Def.Kind == MachineKind.Phone)
+            return PhoneMenu.GetOptions(_facility, who);
+        var carry = who.Carry;
         var options = new List<InteractOption>();
         var facility = _facility.State;
 

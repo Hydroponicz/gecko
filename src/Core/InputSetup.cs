@@ -30,6 +30,7 @@ public partial class InputSetup : Node
 
         // General
         Bind(Actions.Pause, KeyEvent(Key.Escape), ButtonEvent(JoyButton.Start)); // Options
+        Bind(Actions.ShowBalance, KeyEvent(Key.Z), ButtonEvent(JoyButton.DpadDown));
 
         // Targeting: hold L2/LT or right mouse, then choose an option.
         Bind(Actions.Target, MouseEvent(MouseButton.Right), AxisEvent(JoyAxis.TriggerLeft, 1f));
