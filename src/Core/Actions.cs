@@ -22,6 +22,15 @@ public static class Actions
     public static readonly StringName LookDown = "look_down";
 
     public static readonly StringName Pause = "pause";
+    public static readonly StringName Interact = "interact";
+
+    // Build mode (only available inside facilities)
+    public static readonly StringName BuildToggle = "build_toggle";
+    public static readonly StringName BuildNext = "build_next";
+    public static readonly StringName BuildPrev = "build_prev";
+    public static readonly StringName BuildRotate = "build_rotate";
+    public static readonly StringName BuildPlace = "build_place";
+    public static readonly StringName BuildRemove = "build_remove";
 
     public static readonly StringName DebugLightbar = "debug_lightbar";
 }

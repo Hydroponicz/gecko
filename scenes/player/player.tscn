@@ -1,6 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/Player/Player.cs" id="1_script"]
+[ext_resource type="Script" path="res://src/Player/BuildMode.cs" id="2_build"]
+[ext_resource type="Script" path="res://src/Player/PlayerInteraction.cs" id="3_interact"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
@@ -37,6 +39,9 @@ mesh = SubResource("CapsuleMesh_body")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.4)
 mesh = SubResource("BoxMesh_nose")
 
+[node name="CarryAnchor" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -0.5)
+
 [node name="CameraYaw" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 
@@ -49,3 +54,9 @@ spring_length = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="CameraYaw/CameraPitch/SpringArm3D"]
 current = true
+
+[node name="BuildMode" type="Node" parent="."]
+script = ExtResource("2_build")
+
+[node name="PlayerInteraction" type="Node" parent="."]
+script = ExtResource("3_interact")

@@ -2,6 +2,14 @@ using Godot;
 
 namespace Gecko.Core;
 
+/// <summary>Which button glyphs to show for a controller.</summary>
+public enum ControllerFamily
+{
+    Xbox,
+    PlayStation,
+    Steam,
+}
+
 /// <summary>
 /// Autoload. The single place the game talks to controllers through:
 /// tracks keyboard-vs-gamepad (for button prompts) and wraps controller features.
@@ -20,6 +28,7 @@ public partial class Gamepad : Node
 
     public bool UsingGamepad { get; private set; }
     public int ActiveDevice { get; private set; }
+    public ControllerFamily Family { get; private set; } = ControllerFamily.Xbox;
     public Color LightColor { get; private set; } = DefaultLight;
 
     public override void _EnterTree() => Instance = this;
@@ -39,7 +48,11 @@ public partial class Gamepad : Node
         {
             case InputEventJoypadButton:
             case InputEventJoypadMotion motion when Mathf.Abs(motion.AxisValue) > 0.5f:
-                ActiveDevice = @event.Device;
+                if (@event.Device != ActiveDevice || !UsingGamepad)
+                {
+                    ActiveDevice = @event.Device;
+                    Family = DetectFamily(ActiveDevice);
+                }
                 SetMode(true);
                 break;
             case InputEventKey:
@@ -66,6 +79,19 @@ public partial class Gamepad : Node
     {
         if (Input.HasJoyVibration(ActiveDevice))
             Input.StartJoyVibration(ActiveDevice, weak, strong, duration);
+    }
+
+    /// <summary>Guesses the controller brand from its name (Godot reports names like "PS5 Controller").</summary>
+    public static ControllerFamily DetectFamily(int device)
+    {
+        string name = Input.GetJoyName(device).ToLowerInvariant();
+        string[] playStation = ["ps3", "ps4", "ps5", "dualsense", "dualshock", "playstation", "sony"];
+        foreach (string hint in playStation)
+        {
+            if (name.Contains(hint))
+                return ControllerFamily.PlayStation;
+        }
+        return name.Contains("steam") ? ControllerFamily.Steam : ControllerFamily.Xbox;
     }
 
     private void SetMode(bool gamepad)

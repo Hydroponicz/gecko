@@ -47,9 +47,9 @@ The Stash is also a valid worker route point (e.g. "Stash → Printing Press").
 |----------------|------|
 | Route          | One pickup point → one drop-off point |
 | What they carry| Whatever the drop-off point accepts (e.g. on "Stash → Press" a worker brings Paper *and* Ink) |
-| Carry capacity | 5 items per trip (player carries 5 too) |
 | Blocked        | Pickup empty or drop-off full → worker waits (shows the bottleneck) |
 | Wages          | Dirty money, paid daily from the Stash; unpaid → they quit |
+| Carry limit    | Same per-item limits as the player (see Carry limits) |
 | Hiring         | Contact menu for now; later the crew/hierarchy system |
 | Stats          | None yet — all workers identical |
   3. **Conveyors:** not planned unless they turn out to make sense.
@@ -66,11 +66,29 @@ The Stash is also a valid worker route point (e.g. "Stash → Printing Press").
 | Machine        | Input            | Output              | Time  | Notes |
 |----------------|------------------|---------------------|-------|-------|
 | Printing Press | 1 Paper + 1 Ink  | 1 Wet Sheet         | 10s   | |
-| Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Holds 6 sheets at once (placeholder), each dries on its own timer — a capacity puzzle, not a speed one |
+| Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Holds 6 sheets at once, each dries on its own timer — a capacity puzzle, not a speed one |
 | Cutter         | 1 Dry Sheet      | 4 Loose Bills       | 5s    | |
 | Packing Table  | 10 Loose Bills   | 1 Counterfeit Brick | 8s    | |
 
-All numbers are placeholders to be tuned in play.
+All numbers are placeholders to be tuned in play. Live values: `src/Production/Machines.cs`.
+
+### Carry limits (per item type, one type at a time)
+| Item | Max carried |
+|---|---|
+| Paper, Ink, Wet Sheet, Dry Sheet | 5 |
+| Loose Bills | 20 (small bundles) |
+| Counterfeit Brick | 4 (boxes) |
+
+### Build mode
+- Only available while standing inside a facility (frees the button elsewhere).
+- Keyboard: Tab toggle, wheel = change machine, R rotate, LMB place, E pick up/move, X remove.
+- Controller: Touchpad/View toggle, D-pad left/right change, R1/RB rotate, Cross/A place,
+  Square/X pick up/move, Circle/B remove.
+- Removing a machine puts its contents in the Stash.
+
+### Interaction
+- Tap interact = move one item; hold = keep moving them. Direction (give/take) is locked for the hold.
+- The Stash is a row of 4 shelves inside the door; each shelf holds one item type (50 max).
 
 ### Rules
 - Each machine has a small input buffer and output buffer; it stops when output is full.

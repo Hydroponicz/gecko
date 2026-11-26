@@ -3,7 +3,7 @@
 One testable slice at a time. Each slice is built on `preview`, tested, then merged to `main`.
 
 1. ✅ **Player** — third-person movement + camera, keyboard/mouse + gamepad.
-2. **Factory gray box** — empty room, placement grid, the four machines, Stash, hand-carrying.
+2. ⏳ **Factory gray box** (built, awaiting test) — empty room, placement grid, the four machines, Stash, hand-carrying.
    Also the first on-screen **button prompts** (keyboard / Xbox / PlayStation glyphs).
 3. **Money & supplies** — dirty cash HUD, buying supplies.
 4. **Workers & routes**

@@ -19,7 +19,23 @@ public partial class DebugHud : CanvasLayer
     private Label _label = null!;
     private int _colorIndex;
 
-    public override void _Ready() => _label = GetNode<Label>("Label");
+    public override void _Ready()
+    {
+        // Bottom-left, small, out of the way of gameplay prompts.
+        _label = GetNode<Label>("Label");
+        _label.AnchorLeft = 0f;
+        _label.AnchorRight = 0f;
+        _label.AnchorTop = 1f;
+        _label.AnchorBottom = 1f;
+        _label.OffsetLeft = 16f;
+        _label.OffsetRight = 900f;
+        _label.OffsetTop = -150f;
+        _label.OffsetBottom = -16f;
+        _label.VerticalAlignment = VerticalAlignment.Bottom;
+        _label.AddThemeFontSizeOverride("font_size", 14);
+        _label.AddThemeConstantOverride("outline_size", 4);
+        _label.AddThemeColorOverride("font_outline_color", Colors.Black);
+    }
 
     public override void _UnhandledInput(InputEvent @event)
     {
@@ -33,7 +49,7 @@ public partial class DebugHud : CanvasLayer
     public override void _Process(double delta)
     {
         var text = new StringBuilder();
-        text.AppendLine($"Input: {(Gamepad.Instance.UsingGamepad ? "Gamepad" : "Keyboard & Mouse")}");
+        text.AppendLine($"Input: {(Gamepad.Instance.UsingGamepad ? $"Gamepad ({Gamepad.Instance.Family})" : "Keyboard & Mouse")}");
         foreach (int device in Input.GetConnectedJoypads())
         {
             text.AppendLine(

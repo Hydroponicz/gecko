@@ -30,6 +30,15 @@ public partial class InputSetup : Node
 
         // General
         Bind(Actions.Pause, KeyEvent(Key.Escape), ButtonEvent(JoyButton.Start)); // Options
+        Bind(Actions.Interact, KeyEvent(Key.E), ButtonEvent(JoyButton.X)); // Square
+
+        // Build mode. Touchpad on PlayStation, View on Xbox.
+        Bind(Actions.BuildToggle, KeyEvent(Key.Tab), ButtonEvent(JoyButton.Touchpad), ButtonEvent(JoyButton.Back));
+        Bind(Actions.BuildNext, MouseEvent(MouseButton.WheelUp), ButtonEvent(JoyButton.DpadRight));
+        Bind(Actions.BuildPrev, MouseEvent(MouseButton.WheelDown), ButtonEvent(JoyButton.DpadLeft));
+        Bind(Actions.BuildRotate, KeyEvent(Key.R), ButtonEvent(JoyButton.RightShoulder)); // R1
+        Bind(Actions.BuildPlace, MouseEvent(MouseButton.Left), ButtonEvent(JoyButton.A)); // Cross
+        Bind(Actions.BuildRemove, KeyEvent(Key.X), ButtonEvent(JoyButton.B)); // Circle
 
         // Debug
         Bind(Actions.DebugLightbar, KeyEvent(Key.T), ButtonEvent(JoyButton.Y)); // Triangle
@@ -44,6 +53,9 @@ public partial class InputSetup : Node
     }
 
     private static InputEventKey KeyEvent(Key key) => new() { Device = -1, PhysicalKeycode = key };
+
+    private static InputEventMouseButton MouseEvent(MouseButton button) =>
+        new() { Device = -1, ButtonIndex = button };
 
     private static InputEventJoypadButton ButtonEvent(JoyButton button) =>
         new() { Device = -1, ButtonIndex = button };

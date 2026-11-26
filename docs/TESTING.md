@@ -14,3 +14,30 @@
 - [ ] Esc / Options releases the mouse; clicking recaptures it.
 
 Report anything that feels off: speeds, camera distance, sensitivity, etc.
+
+## Step 2 checklist: factory gray box
+The warehouse is the brick-walled room behind the spawn (walk forward-right). The door is on the side facing spawn.
+
+**Carrying** (outside build mode)
+- [ ] Stash shelves inside the door show Paper x30 and Ink x30.
+- [ ] Prompt at the bottom shows the right button for your device (E / Square / X).
+- [ ] Tap interact on a shelf: take one item. Hold: keep taking up to the carry limit.
+- [ ] You can only carry one item type; the carried items show as a stack in front of you.
+- [ ] Interacting with a shelf while carrying stores items back.
+
+**Build mode**
+- [ ] The build prompt (Tab / Touchpad / View) only appears inside the warehouse.
+- [ ] In build mode: grid appears, see-through preview follows where the camera aims, green = OK, red = blocked.
+- [ ] Wheel / D-pad left-right changes machine; R / R1 / RB rotates; LMB / Cross / A places (no jumping).
+- [ ] Aim at a placed machine: interact picks it up to move it; X / Circle / B removes it.
+- [ ] Can't place on the Stash, outside the room, on other machines, or where you stand.
+- [ ] Leaving the room (or Tab / Touchpad) exits build mode; a picked-up machine returns to its spot.
+
+**The chain**
+- [ ] Press: load Paper and Ink -> makes Wet Sheets (10s each).
+- [ ] Drying Rack: load Wet Sheets -> up to 6 dry at once (30s each) -> Dry Sheets.
+- [ ] Cutter: Dry Sheet -> 4 Loose Bills (5s).
+- [ ] Packing Table: 10 Loose Bills -> Counterfeit Brick (8s) which appears in the Stash by itself.
+- [ ] Each machine's label shows inputs, progress and output; finished items sit on top of the machine.
+
+Nothing is saved yet: the factory resets every run.
