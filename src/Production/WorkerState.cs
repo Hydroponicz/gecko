@@ -17,10 +17,11 @@ public enum WorkerPhase
 }
 
 /// <summary>
-/// A place items move between: a specific machine, or the Stash (Machine == null).
+/// A place items move between: a specific machine, or the Stash (Machine == null), optionally one shelf.
 /// </summary>
-public readonly record struct Endpoint(MachineState? Machine)
+public readonly record struct Endpoint(MachineState? Machine, int StashSlot = -1)
 {
+    /// <summary>The Stash in general (a specific shelf is picked when needed).</summary>
     public static readonly Endpoint Stash = new(null);
     public bool IsStash => Machine == null;
     public string Name => Machine?.Def.Name ?? "Stash";

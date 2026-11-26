@@ -22,7 +22,8 @@ Every moving NPC must use `StuckWatchdog` (`src/AI/StuckWatchdog.cs`):
 4. Inside geometry or boxed in: teleport to the safe area immediately.
 5. Target unreachable but the NPC itself is fine: "Can't reach X", retry every 3s (not a teleport).
 6. Destination full 15s: give up and return items to the Stash.
-7. Blocked by the player: wait politely; only the 2-minute rule applies.
+7. Blocked by the player: wait politely, keep a body-width gap, step away and route around;
+   only the 2-minute rule teleports. NPCs never lose collision (immersion).
 8. Anything else: 2-minute watchdog.
 
 ## City NPCs (later)

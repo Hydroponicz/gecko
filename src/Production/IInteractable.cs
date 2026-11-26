@@ -32,6 +32,12 @@ public interface IInteractable
     /// <summary>Where a character should stand to use this, given where they are now (world space).</summary>
     Vector3 GetAccessPoint(Vector3 from);
 
+    /// <summary>
+    /// True for objects you walk up to and handle (machines, shelves, phones).
+    /// False for people: options apply from where you stand (like talking in RDR2).
+    /// </summary>
+    bool RequiresApproach => true;
+
     /// <summary>False once the object is gone (e.g. a machine was removed).</summary>
     bool IsAvailable { get; }
 

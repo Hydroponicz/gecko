@@ -25,6 +25,7 @@ public partial class WorkerView : AnimatableBody3D, IInteractable
     public bool IsAvailable => IsInstanceValid(this) && Visible;
     public string Title => $"Worker #{State.Id}";
     public string Status => State.Status;
+    public bool RequiresApproach => false;
 
     public void Setup(FacilityNode facility, WorkerState state)
     {
@@ -71,7 +72,7 @@ public partial class WorkerView : AnimatableBody3D, IInteractable
     private void Sync()
     {
         Visible = State.IsActive;
-        _collision.Disabled = !State.IsActive; // not here yet
+        _collision.Disabled = !State.IsActive; // not in the building yet
         var local = new Vector3(State.Position.X, 0f, State.Position.Y) * FacilityNode.CellSize;
         GlobalPosition = _facility.ToGlobal(local);
         float yaw = Mathf.Atan2(-State.Facing.X, -State.Facing.Y);

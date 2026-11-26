@@ -95,13 +95,10 @@ public partial class FacilityNode : Node3D
     public override void _PhysicsProcess(double delta)
     {
         // Workers steer around the player.
-        Vector2I? playerCell = null;
+        Vector2? playerPosition = null;
         if (GetTree().GetFirstNodeInGroup(Actors.Player.Group) is Node3D player && ContainsPoint(player.GlobalPosition))
-        {
-            var grid = WorldToGrid(player.GlobalPosition);
-            playerCell = new Vector2I(Mathf.FloorToInt(grid.X), Mathf.FloorToInt(grid.Y));
-        }
-        State.SetPlayerCell(playerCell);
+            playerPosition = WorldToGrid(player.GlobalPosition);
+        State.SetPlayerPosition(playerPosition);
         State.Tick((float)delta);
     }
 

@@ -44,7 +44,15 @@ The Stash is also a valid worker route point (e.g. "Stash → Printing Press").
 No manual routes. The game works out the **jobs** from the layout: every "move items from A to B"
 connection (e.g. Stash -> Printing Press, Printing Press -> Drying Rack, ...). Jobs are split evenly:
 job *j* goes to worker *j mod (number of workers)*. 1 worker does everything; at the cap each worker
-has one job. Each worker always does their most urgent job (destination with the most room).
+has one job.
+
+**Priorities ("keep output flowing"):** each worker picks, among their jobs, the one that best keeps
+product coming out:
+1. Downstream first: jobs closer to the finished product beat jobs that start new work.
+2. Unblock: a machine whose output is full has stopped; emptying it is urgent.
+3. Feed: an idle machine that this delivery would start.
+4. Batch: avoid 1-item trips while the source machine is still making more.
+At the Stash, workers go to the exact shelf holding (or storing) the item, not the cash table.
 
 | Topic | Rule |
 |---|---|
@@ -65,6 +73,8 @@ Workers path on the building grid (A*), avoid each other and the player, and res
 5. Destination unreachable: status "Can't reach X", retry every 3s.
 6. Destination full for 15s: take the items back to the Stash.
 7. Blocked by the player: wait politely ("Waiting for you to move"); not counted as quickly stuck.
+   Workers keep a body-width gap from the player; if you're in their way they step away from you,
+   then route around you. Workers stay solid at all times (including when let go).
 8. Boxed in by machines (around, not on top): teleport into the area connected to the door.
 9. Universal: no progress toward the goal for 2 minutes -> teleport to safety (see npc.md).
 The doorway is kept clear (no machines) so workers can always get in and out.
@@ -113,6 +123,10 @@ Up to 5 of one item type at a time.
   turns to it and performs the action (placeholder lean until real animations); items transfer at
   the moment of the put-down. Movement input is ignored until it finishes. If the way is blocked
   for 3s, it's done from where they stand (if in reach) or cancelled.
+- While targeting, the **camera locks onto the target** and follows it if it moves (RDR2-style);
+  manual camera control resumes when you release Target.
+- Options on **people** (e.g. letting a worker go) apply from where you stand, with a short gesture;
+  you only walk over to objects you handle (machines, shelves, phones).
 - The same Target button will aim weapons in combat and give NPC options later.
 - The Stash is a row of 4 shelves inside the door; each shelf holds one item type (50 max).
 

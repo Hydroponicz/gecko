@@ -27,7 +27,7 @@ public sealed partial class FacilityState
 
     private readonly List<WorkerState> _workers = [];
     private int _nextWorkerId = 1;
-    private Vector2I? _playerCell;
+    private Vector2? _playerPosition; // grid units
     private readonly Random _random = new(1234);
 
     public IReadOnlyList<WorkerState> Workers => _workers;
@@ -40,8 +40,14 @@ public sealed partial class FacilityState
     /// <summary>Most workers this property supports: one per job in the layout, limited by floor area.</summary>
     public int WorkerCap => Math.Min(JobLinks().Count, Math.Max(1, Size.X * Size.Y / SquareMetresPerWorker));
 
-    /// <summary>The cell the player stands on (or null when outside). Workers avoid it.</summary>
-    public void SetPlayerCell(Vector2I? cell) => _playerCell = cell;
+    /// <summary>Workers keep at least this far from the player (centre to centre, in cells) so bodies never overlap.</summary>
+    private const float PlayerClearance = 0.9f;
+
+    /// <summary>Player radius + worker radius + a little margin, in cells (1 cell = 1 m).</summary>
+    private const float PlayerBodyGap = 0.72f;
+
+    /// <summary>Where the player stands, in grid units (or null when outside). Workers keep clear of them.</summary>
+    public void SetPlayerPosition(Vector2? position) => _playerPosition = position;
 
     // ---- Hiring and wages ----
 
@@ -166,7 +172,10 @@ public sealed partial class FacilityState
     /// <summary>Walkable cells next to an endpoint, where a character stands to use it.</summary>
     public List<Vector2I> AccessCells(Endpoint endpoint)
     {
-        var rect = endpoint.Machine?.Rect ?? StashArea;
+        var rect = endpoint.Machine?.Rect
+                   ?? (endpoint.StashSlot >= 0
+                       ? new Rect2I(StashArea.Position + new Vector2I(endpoint.StashSlot, 0), Vector2I.One)
+                       : StashArea);
         var cells = new List<Vector2I>();
         for (int x = rect.Position.X; x < rect.End.X; x++)
         {
@@ -244,6 +253,7 @@ public sealed partial class FacilityState
                     TickWaiting(worker, delta);
                     break;
                 case WorkerPhase.Leaving:
+                    // Walks out like anyone else: around people, with the normal fail-safes.
                     if (MoveAlongPath(worker, delta, DoorCell))
                         RemoveWorker(worker);
                     break;
@@ -281,14 +291,14 @@ public sealed partial class FacilityState
             if (dest.Machine == null)
                 dest = _machines.Where(m => m.InputRoom(carried) > 0).Select(m => new Endpoint(m)).FirstOrDefault();
             if (dest.Machine == null)
-                dest = Endpoint.Stash;
+                dest = StashShelfFor(carried);
             worker.Dest = dest;
             worker.TaskType = carried;
             BeginMove(worker, WorkerPhase.ToDest, dest);
             return;
         }
 
-        // Pick the most urgent job: the destination with the most room for something available.
+        // Pick the job that best keeps the operation producing (see ScoreJob).
         float bestScore = 0f;
         foreach (var job in jobs)
         {
@@ -300,12 +310,12 @@ public sealed partial class FacilityState
                 var source = BestSource(job, type, out int available);
                 if (available <= 0)
                     continue;
-                float score = room + available * 0.1f;
+                float score = ScoreJob(job, source, type, room, available);
                 if (score <= bestScore)
                     continue;
                 bestScore = score;
                 worker.Source = source;
-                worker.Dest = job.Dest;
+                worker.Dest = job.Dest.IsStash ? StashShelfFor(type) : job.Dest;
                 worker.TaskType = type;
                 worker.TaskAmount = Math.Min(Math.Min(room, available), Items.Get(type).MaxCarry);
             }
@@ -320,12 +330,81 @@ public sealed partial class FacilityState
         BeginMove(worker, WorkerPhase.ToSource, worker.Source);
     }
 
+    /// <summary>
+    /// How much a job helps keep product coming out (higher = do it first):
+    /// finishing work beats starting work, unblocking a full machine and feeding an idle one are urgent,
+    /// and tiny trips are avoided while a machine is still making more.
+    /// </summary>
+    private float ScoreJob(JobLink job, Endpoint source, ItemType type, int room, int available)
+    {
+        float score = 1f;
+
+        // Downstream first: the closer to the finished product, the more it matters.
+        score += 10f * ChainDepth(job.Dest);
+
+        // Unblock: the source machine's output is full, so it has stopped working.
+        if (source.Machine is { } from && from.OutputCount >= from.Def.OutputCapacity)
+            score += 25f;
+
+        // Feed: the destination is idle and this lets it start.
+        if (job.Dest.Machine is { } to && to.ActiveCrafts == 0
+            && to.InputCount(type) + Math.Min(available, room) >= to.Def.Inputs.GetValueOrDefault(type))
+            score += 12f;
+
+        // Batch: don't run back and forth with 1 item while the source is still making more.
+        int fullLoad = Math.Min(Items.Get(type).MaxCarry, room);
+        if (available < fullLoad && source.Machine is { ActiveCrafts: > 0 })
+            score -= 20f;
+
+        score += room * 0.5f + available * 0.2f;
+        return score;
+    }
+
+    /// <summary>Position of a destination in the chain: later machines (closer to the product) score higher.</summary>
+    private int ChainDepth(Endpoint dest)
+    {
+        if (dest.Machine == null)
+            return Production.Machines.All.Count; // bringing finished goods to the Stash: last step
+        for (int i = 0; i < Production.Machines.All.Count; i++)
+        {
+            if (Production.Machines.All[i] == dest.Machine.Def)
+                return i;
+        }
+        return 0;
+    }
+
+    /// <summary>The shelf to store an item on: the one already holding it, else the first empty one.</summary>
+    private Endpoint StashShelfFor(ItemType type)
+    {
+        for (int i = 0; i < Stash.Slots.Count; i++)
+        {
+            if (Stash.Slots[i].Type == type && Stash.Slots[i].Count < StashState.SlotCapacity)
+                return new Endpoint(null, i);
+        }
+        for (int i = 0; i < Stash.Slots.Count; i++)
+        {
+            if (Stash.Slots[i].Type == null)
+                return new Endpoint(null, i);
+        }
+        return Endpoint.Stash;
+    }
+
     private Endpoint BestSource(JobLink job, ItemType type, out int available)
     {
         if (job.Sources == null)
         {
-            available = Stash.Slots.Where(s => s.Type == type).Sum(s => s.Count);
-            return Endpoint.Stash;
+            // The exact shelf holding this item (the fullest one).
+            int bestSlot = -1;
+            available = 0;
+            for (int i = 0; i < Stash.Slots.Count; i++)
+            {
+                if (Stash.Slots[i].Type == type && Stash.Slots[i].Count > available)
+                {
+                    available = Stash.Slots[i].Count;
+                    bestSlot = i;
+                }
+            }
+            return new Endpoint(null, bestSlot);
         }
         var best = job.Sources.Where(m => _machines.Contains(m) && m.Def.Output == type)
             .OrderByDescending(m => m.OutputCount).FirstOrDefault();
@@ -376,7 +455,9 @@ public sealed partial class FacilityState
         var center = target.Machine != null
             ? new Vector2(target.Machine.Rect.Position.X + target.Machine.Rect.Size.X / 2f,
                 target.Machine.Rect.Position.Y + target.Machine.Rect.Size.Y / 2f)
-            : new Vector2(StashArea.Position.X + StashArea.Size.X / 2f, StashArea.Position.Y + 0.5f);
+            : target.StashSlot >= 0
+                ? new Vector2(StashArea.Position.X + target.StashSlot + 0.5f, StashArea.Position.Y + 0.5f)
+                : new Vector2(StashArea.Position.X + StashArea.Size.X / 2f, StashArea.Position.Y + 0.5f);
         var toTarget = center - worker.Position;
         if (toTarget.LengthSquared() > 0.0001f)
             worker.Facing = toTarget.Normalized();
@@ -425,8 +506,8 @@ public sealed partial class FacilityState
         }
         if (worker.WaitTimer > GiveUpWaitingAfter && !worker.Dest.IsStash)
         {
-            worker.Dest = Endpoint.Stash; // stop blocking: put it back in the Stash
-            BeginMove(worker, WorkerPhase.ToDest, Endpoint.Stash);
+            worker.Dest = StashShelfFor(worker.TaskType); // stop blocking: put it back in the Stash
+            BeginMove(worker, WorkerPhase.ToDest, worker.Dest);
         }
     }
 
@@ -435,6 +516,9 @@ public sealed partial class FacilityState
         int amount = Math.Min(worker.TaskAmount, Room(worker.Dest, worker.TaskType));
         if (worker.Source.Machine is { } machine)
             return TakeFromMachine(machine, worker.Carry, amount);
+        int slot = worker.Source.StashSlot;
+        if (slot >= 0 && Stash.Slots[slot].Type == worker.TaskType)
+            return TakeFromStash(slot, worker.Carry, amount);
         for (int i = 0; i < Stash.Slots.Count; i++)
         {
             if (Stash.Slots[i].Type == worker.TaskType)
@@ -508,8 +592,20 @@ public sealed partial class FacilityState
     private Dictionary<Vector2I, int> AgentCells(WorkerState except)
     {
         var cells = new Dictionary<Vector2I, int>();
-        if (_playerCell is { } player)
-            cells[player] = 0;
+        if (_playerPosition is { } player)
+        {
+            // Every cell whose centre is too close to the player's body counts as taken by the player.
+            var center = new Vector2I(Mathf.FloorToInt(player.X), Mathf.FloorToInt(player.Y));
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    var cell = center + new Vector2I(dx, dy);
+                    if (CellCenter(cell).DistanceTo(player) < PlayerClearance)
+                        cells[cell] = 0;
+                }
+            }
+        }
         foreach (var other in _workers)
         {
             if (other == except || !other.IsActive)
@@ -600,11 +696,46 @@ public sealed partial class FacilityState
             return false;
         }
 
-        worker.BlockedTimer = 0f;
-        worker.ReplannedAroundAgents = false;
         var target = CellCenter(next);
         var offset = target - worker.Position;
         float step = WalkSpeed * delta;
+
+        // Never step closer to the player than their body allows (bodies would overlap).
+        if (_playerPosition is { } player)
+        {
+            var after = worker.Position + offset.LimitLength(step);
+            if (after.DistanceTo(player) < PlayerBodyGap && after.DistanceTo(player) < worker.Position.DistanceTo(player))
+            {
+                worker.BlockedTimer += delta;
+                worker.Status = worker.Phase == WorkerPhase.Leaving ? worker.Status : "Waiting for you to move";
+                worker.NoProgressTimer = Mathf.Max(0f, worker.NoProgressTimer - delta);
+                if (worker.BlockedTimer > ReplanAfter)
+                {
+                    // Step away from the player first, then route around them.
+                    var goal = worker.Path[^1];
+                    var people = AgentCells(worker);
+                    var away = GridPath.Neighbors(worker.Cell)
+                        .Where(c => IsWalkable(c) && !people.ContainsKey(c)
+                                    && CellCenter(c).DistanceTo(player) > worker.Position.DistanceTo(player))
+                        .OrderByDescending(c => CellCenter(c).DistanceTo(player))
+                        .Cast<Vector2I?>()
+                        .FirstOrDefault();
+                    if (away is { } side)
+                    {
+                        worker.Path = [side];
+                        var rest = GridPath.Find(side, [goal], c => IsWalkable(c) && !people.ContainsKey(c), _ => 0)
+                                   ?? GridPath.Find(side, [goal], IsWalkable, _ => 0);
+                        if (rest != null)
+                            worker.Path.AddRange(rest);
+                    }
+                    worker.BlockedTimer = 0f;
+                }
+                return false;
+            }
+        }
+
+        worker.BlockedTimer = 0f;
+        worker.ReplannedAroundAgents = false;
         if (offset.Length() <= step)
         {
             worker.Position = target;

@@ -54,6 +54,17 @@ public partial class Player : CharacterBody3D
     /// <summary>World position to walk to while locked, or null to stand still.</summary>
     public Vector3? ScriptedMoveTarget { get; set; }
 
+    /// <summary>
+    /// When set, the camera turns to frame this world position and follows it as it moves
+    /// (target lock-on). Manual camera input is ignored meanwhile.
+    /// </summary>
+    public Vector3? LookAtTarget { get; set; }
+
+    [ExportGroup("Lock-on")]
+    [Export] public float LockOnTurnSpeed { get; set; } = 8f;
+    [Export] public float LockOnMinPitchDegrees { get; set; } = -35f;
+    [Export] public float LockOnMaxPitchDegrees { get; set; } = 15f;
+
     /// <summary>Turns the body toward a world position (used while performing an action).</summary>
     public void FaceTowards(Vector3 worldPosition, float delta)
     {
@@ -86,7 +97,7 @@ public partial class Player : CharacterBody3D
 
     public override void _UnhandledInput(InputEvent @event)
     {
-        if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured)
+        if (@event is InputEventMouseMotion motion && Input.MouseMode == Input.MouseModeEnum.Captured && LookAtTarget == null)
         {
             RotateCamera(-motion.Relative.X * MouseSensitivity, -motion.Relative.Y * MouseSensitivity);
         }
@@ -107,9 +118,16 @@ public partial class Player : CharacterBody3D
         float dt = (float)delta;
 
         // Right-stick camera
-        Vector2 look = Input.GetVector(Actions.LookLeft, Actions.LookRight, Actions.LookUp, Actions.LookDown);
-        if (look != Vector2.Zero)
-            RotateCamera(-look.X * StickSensitivity * dt, -look.Y * StickSensitivity * dt);
+        if (LookAtTarget is { } lookAt)
+        {
+            UpdateLockOn(lookAt, dt);
+        }
+        else
+        {
+            Vector2 look = Input.GetVector(Actions.LookLeft, Actions.LookRight, Actions.LookUp, Actions.LookDown);
+            if (look != Vector2.Zero)
+                RotateCamera(-look.X * StickSensitivity * dt, -look.Y * StickSensitivity * dt);
+        }
 
         Vector3 velocity = Velocity;
 
@@ -172,6 +190,23 @@ public partial class Player : CharacterBody3D
         if (onFloor && !_wasOnFloor && fallSpeed > 6f)
             Gamepad.Instance.Rumble(0.3f, 0.6f, 0.15f);
         _wasOnFloor = onFloor;
+    }
+
+    /// <summary>Smoothly swings the camera to frame a target (it keeps following if the target moves).</summary>
+    private void UpdateLockOn(Vector3 target, float dt)
+    {
+        var toTarget = target - _pitch.GlobalPosition;
+        var flat = new Vector2(toTarget.X, toTarget.Z);
+        if (flat.LengthSquared() < 0.01f)
+            return;
+        float desiredYaw = Mathf.Atan2(-toTarget.X, -toTarget.Z);
+        float desiredPitch = Mathf.Clamp(
+            Mathf.Atan2(toTarget.Y, flat.Length()),
+            Mathf.DegToRad(LockOnMinPitchDegrees),
+            Mathf.DegToRad(LockOnMaxPitchDegrees));
+        float blend = 1f - Mathf.Exp(-LockOnTurnSpeed * dt);
+        _yaw.Rotation = _yaw.Rotation with { Y = Mathf.LerpAngle(_yaw.Rotation.Y, desiredYaw, blend) };
+        _pitch.Rotation = _pitch.Rotation with { X = Mathf.Lerp(_pitch.Rotation.X, desiredPitch, blend) };
     }
 
     private void RotateCamera(float yawDelta, float pitchDelta)

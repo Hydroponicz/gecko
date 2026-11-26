@@ -133,6 +133,7 @@ public partial class PlayerInteraction : Node
 
         if (_buildMode.Active && _task == null)
         {
+            _player.LookAtTarget = null;
             SetTarget(null);
             GameHud.Instance.SetMenu(null);
             return;
@@ -140,11 +141,14 @@ public partial class PlayerInteraction : Node
 
         if (_task != null)
         {
+            _player.LookAtTarget = _task.Target.IsAvailable ? _task.Target.InteractPosition : null;
             UpdateTask((float)delta);
             return;
         }
 
         UpdateTarget();
+        // RDR2-style: the camera locks onto (and follows) whatever you're targeting.
+        _player.LookAtTarget = _target?.InteractPosition;
         if (_target != null)
             HandleOptions((float)delta);
         UpdateHud();
@@ -207,7 +211,7 @@ public partial class PlayerInteraction : Node
         _pressedSlot = -1;
     }
 
-    /// <summary>Starts the chosen option: the player is locked, walks over, then performs it.</summary>
+    /// <summary>Starts the chosen option: the player is locked, walks over (objects only), then performs it.</summary>
     private void Execute(int slot, int amount)
     {
         if (_target == null)
@@ -221,7 +225,17 @@ public partial class PlayerInteraction : Node
         target.SetHighlighted(true);
         _task = new ActionTask(target, options[slot].Label, amount);
         _player.IsLocked = true;
-        _player.ScriptedMoveTarget = target.GetAccessPoint(_player.GlobalPosition);
+        if (target.RequiresApproach)
+        {
+            _player.ScriptedMoveTarget = target.GetAccessPoint(_player.GlobalPosition);
+        }
+        else
+        {
+            // People: no walking over, just a short gesture from where you stand.
+            _player.ScriptedMoveTarget = null;
+            _task.Walking = false;
+            _task.Duration = 0.4f;
+        }
         GameHud.Instance.SetMenu(null);
         GameHud.Instance.SetPrompt($"{options[slot].Label}...");
     }
