@@ -53,8 +53,12 @@ product coming out:
 3. Feed: an idle machine that this delivery would start.
 4. Batch: avoid 1-item trips while the source machine is still making more.
 At the Stash, workers go to the exact shelf holding (or storing) the item, not the cash table.
-**Idle workers** never loiter in the doorway or in front of machines/shelves: each walks to their own
-spot on open floor, away from the door, and waits there until work comes up.
+**Idle workers** never loiter in the doorway, in front of machines/shelves, or on/next to chokepoints.
+They stay where they are if that's fine, otherwise walk a short way (max 6 tiles) to open floor, and do
+an idle activity until work comes up (placeholder props until real animations):
+leaning on a wall (only real outer-wall spots), smoking, having a beer, or arms crossed.
+A busy coworker blocked by an idle one says "excuse me" and the idle worker moves along.
+Workers arriving together step in onto separate free tiles by the door.
 
 | Topic | Rule |
 |---|---|

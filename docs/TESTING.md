@@ -106,6 +106,8 @@ Nothing is saved yet: the factory resets every run.
 - [ ] Workers taking Ink/Paper walk to that exact shelf (not the cash table).
 - [ ] 1 worker: moves Bill Bundles to the Packing Table / unblocks full machines before restocking the press.
 - [ ] Holding Target: the camera swings to the target and follows a moving worker; release to get control back.
-- [ ] Idle workers (e.g. hired with an empty Stash) walk to open floor away from the door, Stash and machines.
+- [ ] Idle workers (e.g. hired with an empty Stash) wait on open floor away from the door, Stash and machines.
+- [ ] Idle activities: leaning on an outer wall, smoking (glowing tip, raised to mouth), beer bottle (sips), arms crossed.
+- [ ] Hire several workers at once: they come in on separate tiles, no pile-up in the doorway.
 - [ ] Let a worker go while standing right next to them: no walking over, they drop items at the Stash,
       step around you and walk out (still solid, nobody gets wedged).

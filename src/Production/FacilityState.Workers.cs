@@ -24,6 +24,7 @@ public sealed partial class FacilityState
     private const float TeleportAfter = 8f;        // no progress this long: teleport to safety
     private const float RetryAfterUnreachable = 3f;
     private const float GiveUpWaitingAfter = 15f;  // destination full this long: return items to Stash
+    private const int MaxIdleWalk = 6;             // idle workers wait close to where they finished
 
     private readonly List<WorkerState> _workers = [];
     private int _nextWorkerId = 1;
@@ -71,6 +72,7 @@ public sealed partial class FacilityState
         worker.Carry.Remove(worker.Carry.Count);
         worker.Phase = WorkerPhase.Leaving;
         worker.IdleSpot = null;
+        worker.Activity = IdleActivity.None;
         worker.Status = reason;
         worker.Path.Clear();
         if (!worker.IsActive)
@@ -208,7 +210,12 @@ public sealed partial class FacilityState
                 worker.ArriveTimer -= delta;
                 if (worker.ArriveTimer <= 0f)
                 {
-                    worker.Position = CellCenter(DoorCell);
+                    // Step in onto the nearest free tile by the door (never on top of someone).
+                    var taken = AgentCells(worker);
+                    var entry = GridPath.Nearest(DoorCell, Size, c => IsWalkable(c) && !taken.ContainsKey(c));
+                    if (entry == null)
+                        continue; // doorway packed: wait outside a moment longer
+                    worker.Position = CellCenter(entry.Value);
                     worker.Phase = WorkerPhase.Idle;
                     worker.Status = "Starting work";
                 }
@@ -326,11 +333,10 @@ public sealed partial class FacilityState
         {
             worker.Watchdog.Progress(); // legitimately idle, not stuck
             WaitOutOfTheWay(worker, delta);
-            if (worker.Path.Count == 0)
-                worker.Status = jobs.Count == 0 ? "No jobs for me" : "Nothing to move right now";
             return;
         }
         worker.IdleSpot = null;
+        worker.Activity = IdleActivity.None;
         BeginMove(worker, WorkerPhase.ToSource, worker.Source);
     }
 
@@ -340,21 +346,65 @@ public sealed partial class FacilityState
     /// </summary>
     private void WaitOutOfTheWay(WorkerState worker, float delta)
     {
+        worker.NudgeTimer = Mathf.Max(0f, worker.NudgeTimer - delta);
         var keepClear = KeepClearCells();
         bool spotStillGood = worker.IdleSpot is { } spot && IsWalkable(spot) && !keepClear.Contains(spot)
-                             && !_workers.Any(w => w != worker && w.IdleSpot == spot);
+                             && !_workers.Any(w => w != worker && w.IdleSpot == spot)
+                             && (worker.PlannedActivity != IdleActivity.LeanOnWall || WallNormal(spot) != null);
         if (!spotStillGood)
         {
-            worker.IdleSpot = PickIdleSpot(worker, keepClear);
+            worker.Activity = IdleActivity.None;
+            worker.PlannedActivity = (IdleActivity)Random.Shared.Next(1, 5);
+            var reachable = SafeArea();
+            worker.IdleSpot = null;
+            if (worker.PlannedActivity == IdleActivity.LeanOnWall)
+            {
+                worker.IdleSpot = PickIdleSpot(worker, keepClear, againstWall: true);
+                if (worker.IdleSpot == null) // no wall close by: do something else instead of wandering off
+                    worker.PlannedActivity = (IdleActivity)Random.Shared.Next(2, 5);
+            }
+            // Already standing somewhere fine? Stay put (less walking = less traffic in tight layouts).
+            if (worker.IdleSpot == null && IsGoodIdleCell(worker, worker.Cell, keepClear, reachable))
+                worker.IdleSpot = worker.Cell;
+            worker.IdleSpot ??= PickIdleSpot(worker, keepClear, againstWall: false);
             worker.Path.Clear();
             if (worker.IdleSpot is { } target && target != worker.Cell)
                 worker.Path = PlanPath(worker, [target], hardBlockAgents: false) ?? [];
         }
+
         if (worker.Path.Count > 0)
         {
             worker.Status = "Stepping out of the way";
             MoveAlongPath(worker, delta);
+            return;
         }
+
+        // At the spot: settle into the activity.
+        if (worker.Activity == IdleActivity.None)
+        {
+            worker.Activity = worker.PlannedActivity;
+            if (worker.Activity == IdleActivity.LeanOnWall && WallNormal(worker.Cell) is { } away)
+                worker.Facing = away; // back to the wall
+            else
+                worker.Facing = (CellCenter(new Vector2I(Size.X / 2, Size.Y / 2)) - worker.Position).Normalized();
+        }
+        worker.Status = worker.Activity switch
+        {
+            IdleActivity.LeanOnWall => "Leaning on the wall",
+            IdleActivity.Smoking => "Smoking a cigarette",
+            IdleActivity.DrinkingBeer => "Having a beer",
+            _ => "Taking a break",
+        };
+    }
+
+    /// <summary>Direction pointing away from the outer wall next to this cell, or null if it isn't against one.</summary>
+    private Vector2? WallNormal(Vector2I cell)
+    {
+        if (cell.X == 0) return Vector2.Right;
+        if (cell.X == Size.X - 1) return Vector2.Left;
+        if (cell.Y == 0) return Vector2.Down;
+        if (cell.Y == Size.Y - 1) return Vector2.Up;
+        return null;
     }
 
     /// <summary>Cells idle workers shouldn't stand on: the doorway area and every machine/shelf working spot.</summary>
@@ -373,31 +423,75 @@ public sealed partial class FacilityState
         return cells;
     }
 
-    private Vector2I? PickIdleSpot(WorkerState worker, HashSet<Vector2I> keepClear)
+    /// <param name="againstWall">Only spots right against an outer wall (for leaning). Never the strip
+    /// behind machines: those are machine working spots and stay clear.</param>
+    private Vector2I? PickIdleSpot(WorkerState worker, HashSet<Vector2I> keepClear, bool againstWall)
     {
         var reachable = SafeArea();
         var taken = _workers.Where(w => w != worker && w.IdleSpot != null).Select(w => w.IdleSpot!.Value).ToHashSet();
-        Vector2I? best = null;
-        float bestScore = float.MinValue;
+        var ranked = new List<(Vector2I Cell, float Score)>();
         foreach (var cell in reachable)
         {
             if (keepClear.Contains(cell) || taken.Contains(cell))
                 continue;
-            // Prefer open floor well away from anything that must stay clear (and from the door),
-            // without walking too far, and not right next to another idle worker.
+            if (againstWall && WallNormal(cell) == null)
+                continue;
+            // Stay close (max 6 tiles away), prefer open floor away from anything that must stay clear,
+            // and don't stand right next to another idle worker.
+            int travel = Math.Abs(cell.X - worker.Cell.X) + Math.Abs(cell.Y - worker.Cell.Y);
+            if (travel > MaxIdleWalk || (worker.NudgeTimer > 0f && travel <= 1))
+                continue;
             float clearance = keepClear.Count == 0 ? 3f
                 : Math.Min(3f, keepClear.Min(k => (float)(Math.Abs(k.X - cell.X) + Math.Abs(k.Y - cell.Y))));
             float score = clearance * 2f
-                          + CellCenter(cell).DistanceTo(CellCenter(DoorCell)) * 0.3f
-                          - CellCenter(cell).DistanceTo(worker.Position) * 0.3f
+                          - travel * 0.8f
                           - taken.Count(t => Math.Abs(t.X - cell.X) + Math.Abs(t.Y - cell.Y) <= 1) * 4f;
-            if (score > bestScore)
+            ranked.Add((cell, score));
+        }
+        // Never wait on or right next to a chokepoint (a tile that would cut the room in two if blocked).
+        foreach (var (cell, _) in ranked.OrderByDescending(r => r.Score))
+        {
+            if (IsChokepoint(cell, reachable))
+                continue;
+            if (GridPath.Neighbors(cell).Any(n => reachable.Contains(n) && IsChokepoint(n, reachable)))
+                continue;
+            return cell;
+        }
+        return null;
+    }
+
+    /// <summary>A fine place to wait: reachable, not a spot that must stay clear, not taken, not by a chokepoint.</summary>
+    private bool IsGoodIdleCell(WorkerState worker, Vector2I cell, HashSet<Vector2I> keepClear, HashSet<Vector2I> reachable)
+    {
+        if (worker.NudgeTimer > 0f && cell == worker.Cell)
+            return false; // just got asked to move from here
+        if (!reachable.Contains(cell) || keepClear.Contains(cell))
+            return false;
+        if (_workers.Any(w => w != worker && (w.IdleSpot == cell || (w.IsActive && w.Cell == cell))))
+            return false;
+        if (IsChokepoint(cell, reachable))
+            return false;
+        return !GridPath.Neighbors(cell).Any(n => reachable.Contains(n) && IsChokepoint(n, reachable));
+    }
+
+    /// <summary>True if blocking this cell would cut some of the reachable area off from the door.</summary>
+    private bool IsChokepoint(Vector2I cell, HashSet<Vector2I> reachable)
+    {
+        if (cell == DoorCell)
+            return true;
+        var seen = new HashSet<Vector2I> { DoorCell };
+        var queue = new Queue<Vector2I>();
+        queue.Enqueue(DoorCell);
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            foreach (var next in GridPath.Neighbors(current))
             {
-                bestScore = score;
-                best = cell;
+                if (next != cell && reachable.Contains(next) && seen.Add(next))
+                    queue.Enqueue(next);
             }
         }
-        return best;
+        return seen.Count < reachable.Count - 1;
     }
 
     /// <summary>
@@ -490,6 +584,7 @@ public sealed partial class FacilityState
     private void BeginMove(WorkerState worker, WorkerPhase phase, Endpoint target)
     {
         worker.Phase = phase;
+        worker.Activity = IdleActivity.None;
         worker.BestDistanceToGoal = int.MaxValue;
         worker.Path.Clear();
         worker.NoProgressTimer = 0f;
@@ -609,6 +704,8 @@ public sealed partial class FacilityState
     private void ResetTask(WorkerState worker, string? reason)
     {
         worker.Phase = WorkerPhase.Idle;
+        worker.Activity = IdleActivity.None;
+        worker.IdleSpot = null;
         worker.Path.Clear();
         worker.ActionProgress = 0f;
         if (reason != null)
@@ -731,6 +828,14 @@ public sealed partial class FacilityState
         if (agents.TryGetValue(next, out int blocker))
         {
             worker.BlockedTimer += delta;
+            // "Excuse me": an idle coworker standing in the way of someone working moves along.
+            if (worker.Phase != WorkerPhase.Idle
+                && _workers.FirstOrDefault(w => w.Id == blocker) is { Phase: WorkerPhase.Idle, Path.Count: 0 } idler)
+            {
+                idler.IdleSpot = null;
+                idler.Activity = IdleActivity.None;
+                idler.NudgeTimer = 6f;
+            }
             if (blocker == 0)
             {
                 // The player is in the way: wait politely instead of counting it as stuck.

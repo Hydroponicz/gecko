@@ -16,6 +16,16 @@ public enum WorkerPhase
     Leaving,
 }
 
+/// <summary>What an idle worker does while waiting for work (placeholder props until real animations).</summary>
+public enum IdleActivity
+{
+    None,
+    LeanOnWall,
+    Smoking,
+    DrinkingBeer,
+    ArmsCrossed,
+}
+
 /// <summary>
 /// A place items move between: a specific machine, or the Stash (Machine == null), optionally one shelf.
 /// </summary>
@@ -49,6 +59,9 @@ public sealed class WorkerState(int id, Vector2 position, float arriveDelay)
     /// <summary>0..1 progress of the current take/give action (for the lean pose).</summary>
     public float ActionProgress { get; internal set; }
 
+    /// <summary>What they're doing while idle at their spot (None while working or walking).</summary>
+    public IdleActivity Activity { get; internal set; }
+
     /// <summary>How many times the fail-safe had to teleport this worker (for debugging).</summary>
     public int Teleports { get; internal set; }
 
@@ -73,5 +86,7 @@ public sealed class WorkerState(int id, Vector2 position, float arriveDelay)
     internal float TrapCheckTimer;
     internal int BestDistanceToGoal = int.MaxValue; // only getting closer counts as progress
     internal Vector2I? IdleSpot;   // where to wait when there's nothing to do (out of the way)
+    internal IdleActivity PlannedActivity; // starts once they reach the idle spot
+    internal float NudgeTimer;     // asked to move by a busy coworker: don't wait here again for a bit
     internal readonly StuckWatchdog Watchdog = new();
 }
