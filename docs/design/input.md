@@ -11,6 +11,28 @@ Status: **draft**
 - Button prompts on screen switch automatically between keyboard and PlayStation glyphs depending on the last device used.
 - Machine placement aims from the player/camera and snaps to the grid, so it works with a stick as well as a mouse.
 
+## Supported controllers
+Godot reads buttons and sticks for **all** controllers (Xbox, PlayStation, Steam Input, generic),
+using its built-in SDL controller database. We do not write our own button reading:
+it would add a lot of work for no new features.
+
+## Button prompts
+On-screen prompts always match the device the player last touched.
+
+| Glyph set | Used for |
+|---|---|
+| Keyboard & mouse | Any key/mouse input |
+| Xbox | Xbox controllers, and the default for unknown pads |
+| PlayStation | DualSense / DualShock 4 (detected by name/vendor ID) |
+| Steam | Steam Controller / Steam Deck, via Steamworks Steam Input glyphs once we ship on Steam |
+
+Notes:
+- Steam controllers use the Xbox A/B/X/Y layout, so Xbox glyphs are a correct fallback.
+  Steam Input presents controllers to the game as a virtual Xbox pad; real Steam glyphs need the
+  Steamworks Steam Input API (later, with Steam integration).
+- Steam Input can also wrap a DualSense and hide its extra features; revisit when we add Steam.
+- Prompts are built from action names, never hard-coded button names.
+
 ## DualSense feature support (researched for Godot 4.7.2)
 | Feature | Status | How |
 |---|---|---|
