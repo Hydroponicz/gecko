@@ -107,22 +107,24 @@ public partial class DebugMenu : CanvasLayer
         if (!IsOpen)
             return;
 
-        if (Input.IsActionJustPressed("ui_down"))
+        if (Input.IsActionJustPressed(Actions.MenuDown))
             _selected = (_selected + 1) % _entries.Count;
-        if (Input.IsActionJustPressed("ui_up"))
+        if (Input.IsActionJustPressed(Actions.MenuUp))
             _selected = (_selected - 1 + _entries.Count) % _entries.Count;
         var entry = _entries[_selected];
-        if (Input.IsActionJustPressed("ui_right"))
+        if (Input.IsActionJustPressed(Actions.MenuRight))
             entry.OnChange?.Invoke(1);
-        if (Input.IsActionJustPressed("ui_left"))
+        if (Input.IsActionJustPressed(Actions.MenuLeft))
             entry.OnChange?.Invoke(-1);
-        if (Input.IsActionJustPressed("ui_accept"))
+        if (Input.IsActionJustPressed(Actions.MenuAccept))
             entry.OnAccept?.Invoke();
 
         var text = new StringBuilder("DEBUG MENU\n\n");
         for (int i = 0; i < _entries.Count; i++)
             text.Append(i == _selected ? "> " : "   ").Append(_entries[i].Label()).Append('\n');
-        text.Append($"\nUp/Down: select   Left/Right: change   Enter / {Prompts.ButtonName(Actions.Jump)}: use\n");
+        text.Append($"\n{Prompts.ButtonName(Actions.MenuUp)}/{Prompts.ButtonName(Actions.MenuDown)}: select   " +
+                    $"{Prompts.ButtonName(Actions.MenuLeft)}/{Prompts.ButtonName(Actions.MenuRight)}: change   " +
+                    $"{Prompts.ButtonName(Actions.MenuAccept)}: use\n");
         text.Append(DeviceInfo());
         if (_lastMessage.Length > 0)
             text.Append($"\n{_lastMessage}");

@@ -49,6 +49,14 @@ public partial class InputSetup : Node
 
         // Debug
         Bind(Actions.DebugMenu, KeyEvent(Key.F1), ButtonEvent(JoyButton.RightStick)); // R3
+
+        // Menu navigation (debug menu now, other menus later). Godot's built-in ui_accept
+        // has no controller button, so menus use these instead.
+        Bind(Actions.MenuUp, KeyEvent(Key.Up), ButtonEvent(JoyButton.DpadUp));
+        Bind(Actions.MenuDown, KeyEvent(Key.Down), ButtonEvent(JoyButton.DpadDown));
+        Bind(Actions.MenuLeft, KeyEvent(Key.Left), ButtonEvent(JoyButton.DpadLeft));
+        Bind(Actions.MenuRight, KeyEvent(Key.Right), ButtonEvent(JoyButton.DpadRight));
+        Bind(Actions.MenuAccept, KeyEvent(Key.Enter), KeyEvent(Key.KpEnter), ButtonEvent(JoyButton.A)); // Cross
     }
 
     private static void Bind(StringName action, params InputEvent[] events)

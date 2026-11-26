@@ -41,4 +41,9 @@ public static class Actions
     public static readonly StringName BuildMove = "build_move";
 
     public static readonly StringName DebugMenu = "debug_menu";
+    public static readonly StringName MenuUp = "menu_up";
+    public static readonly StringName MenuDown = "menu_down";
+    public static readonly StringName MenuLeft = "menu_left";
+    public static readonly StringName MenuRight = "menu_right";
+    public static readonly StringName MenuAccept = "menu_accept";
 }
