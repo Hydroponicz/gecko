@@ -29,7 +29,8 @@ public sealed record ItemDef(
     int MaxCarry,
     ItemShape Shape,
     Vector3 Size,
-    Color Color);
+    Color Color,
+    Color? BandColor = null);
 
 public static class Items
 {
@@ -46,12 +47,12 @@ public static class Items
             new Vector3(0.32f, 0.02f, 0.22f), new Color(0.65f, 0.8f, 0.65f)),
         [ItemType.DrySheet] = new(ItemType.DrySheet, "Dry Sheet", 5, ItemShape.Box,
             new Vector3(0.32f, 0.02f, 0.22f), new Color(0.35f, 0.55f, 0.35f)),
-        // A banded bundle of bills
+        // A small bundle of bills with a paper band
         [ItemType.LooseBills] = new(ItemType.LooseBills, "Loose Bills", 20, ItemShape.Box,
-            new Vector3(0.16f, 0.03f, 0.07f), new Color(0.3f, 0.5f, 0.3f)),
-        // A cardboard box full of counterfeit cash
+            new Vector3(0.16f, 0.03f, 0.07f), new Color(0.3f, 0.5f, 0.3f), new Color(0.9f, 0.88f, 0.8f)),
+        // A brick of banknotes: a thick block of bills, shrink-wrapped and banded
         [ItemType.CounterfeitBrick] = new(ItemType.CounterfeitBrick, "Counterfeit Brick", 4, ItemShape.Box,
-            new Vector3(0.36f, 0.2f, 0.26f), new Color(0.6f, 0.45f, 0.28f)),
+            new Vector3(0.17f, 0.1f, 0.08f), new Color(0.32f, 0.5f, 0.32f), new Color(0.85f, 0.75f, 0.35f)),
     };
 
     public static ItemDef Get(ItemType type) => Defs[type];

@@ -7,11 +7,26 @@ namespace Gecko.Production;
 public static class ItemVisuals
 {
     private static readonly Dictionary<ItemType, (Mesh Mesh, Material Material)> Cache = new();
+    private static readonly Dictionary<ItemType, (Mesh Mesh, Material Material)> BandCache = new();
 
     public static MeshInstance3D Create(ItemType type)
     {
         var (mesh, material) = Get(type);
-        return new MeshInstance3D { Mesh = mesh, MaterialOverride = material };
+        var item = new MeshInstance3D { Mesh = mesh, MaterialOverride = material };
+
+        // Paper band around the middle (cash bundles and bricks).
+        var def = Items.Get(type);
+        if (def.BandColor is { } bandColor)
+        {
+            if (!BandCache.TryGetValue(type, out var band))
+            {
+                band = (new BoxMesh { Size = new Vector3(def.Size.X * 0.25f, def.Size.Y * 1.04f, def.Size.Z * 1.04f) },
+                    new StandardMaterial3D { AlbedoColor = bandColor });
+                BandCache[type] = band;
+            }
+            item.AddChild(new MeshInstance3D { Mesh = band.Mesh, MaterialOverride = band.Material });
+        }
+        return item;
     }
 
     /// <summary>Fills <paramref name="parent"/> with a vertical stack of items (capped to keep it readable).</summary>
