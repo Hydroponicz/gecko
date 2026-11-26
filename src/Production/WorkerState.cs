@@ -72,5 +72,6 @@ public sealed class WorkerState(int id, Vector2 position, float arriveDelay)
     internal float ActionTimer;
     internal float TrapCheckTimer;
     internal int BestDistanceToGoal = int.MaxValue; // only getting closer counts as progress
+    internal Vector2I? IdleSpot;   // where to wait when there's nothing to do (out of the way)
     internal readonly StuckWatchdog Watchdog = new();
 }

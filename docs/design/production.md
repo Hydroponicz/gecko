@@ -53,6 +53,8 @@ product coming out:
 3. Feed: an idle machine that this delivery would start.
 4. Batch: avoid 1-item trips while the source machine is still making more.
 At the Stash, workers go to the exact shelf holding (or storing) the item, not the cash table.
+**Idle workers** never loiter in the doorway or in front of machines/shelves: each walks to their own
+spot on open floor, away from the door, and waits there until work comes up.
 
 | Topic | Rule |
 |---|---|

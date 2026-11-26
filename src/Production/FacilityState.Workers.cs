@@ -70,6 +70,7 @@ public sealed partial class FacilityState
             worker.Carry.Remove(Stash.Add(type, worker.Carry.Count));
         worker.Carry.Remove(worker.Carry.Count);
         worker.Phase = WorkerPhase.Leaving;
+        worker.IdleSpot = null;
         worker.Status = reason;
         worker.Path.Clear();
         if (!worker.IsActive)
@@ -323,11 +324,80 @@ public sealed partial class FacilityState
 
         if (bestScore <= 0f)
         {
-            worker.Status = jobs.Count == 0 ? "No jobs for me" : "Nothing to move right now";
             worker.Watchdog.Progress(); // legitimately idle, not stuck
+            WaitOutOfTheWay(worker, delta);
+            if (worker.Path.Count == 0)
+                worker.Status = jobs.Count == 0 ? "No jobs for me" : "Nothing to move right now";
             return;
         }
+        worker.IdleSpot = null;
         BeginMove(worker, WorkerPhase.ToSource, worker.Source);
+    }
+
+    /// <summary>
+    /// Idle workers don't loiter in doorways or in front of machines/shelves: they walk to a free spot
+    /// in open floor out of the way (each idle worker their own) and wait there. Work still interrupts this any time.
+    /// </summary>
+    private void WaitOutOfTheWay(WorkerState worker, float delta)
+    {
+        var keepClear = KeepClearCells();
+        bool spotStillGood = worker.IdleSpot is { } spot && IsWalkable(spot) && !keepClear.Contains(spot)
+                             && !_workers.Any(w => w != worker && w.IdleSpot == spot);
+        if (!spotStillGood)
+        {
+            worker.IdleSpot = PickIdleSpot(worker, keepClear);
+            worker.Path.Clear();
+            if (worker.IdleSpot is { } target && target != worker.Cell)
+                worker.Path = PlanPath(worker, [target], hardBlockAgents: false) ?? [];
+        }
+        if (worker.Path.Count > 0)
+        {
+            worker.Status = "Stepping out of the way";
+            MoveAlongPath(worker, delta);
+        }
+    }
+
+    /// <summary>Cells idle workers shouldn't stand on: the doorway area and every machine/shelf working spot.</summary>
+    private HashSet<Vector2I> KeepClearCells()
+    {
+        var cells = new HashSet<Vector2I>();
+        // Doorway, plus a couple of cells into the room in front of it.
+        for (int x = DoorArea.Position.X - 1; x <= DoorArea.End.X; x++)
+        {
+            for (int y = DoorArea.Position.Y - 2; y <= DoorArea.Position.Y; y++)
+                cells.Add(new Vector2I(x, y));
+        }
+        cells.UnionWith(AccessCells(Endpoint.Stash));
+        foreach (var machine in _machines)
+            cells.UnionWith(AccessCells(new Endpoint(machine)));
+        return cells;
+    }
+
+    private Vector2I? PickIdleSpot(WorkerState worker, HashSet<Vector2I> keepClear)
+    {
+        var reachable = SafeArea();
+        var taken = _workers.Where(w => w != worker && w.IdleSpot != null).Select(w => w.IdleSpot!.Value).ToHashSet();
+        Vector2I? best = null;
+        float bestScore = float.MinValue;
+        foreach (var cell in reachable)
+        {
+            if (keepClear.Contains(cell) || taken.Contains(cell))
+                continue;
+            // Prefer open floor well away from anything that must stay clear (and from the door),
+            // without walking too far, and not right next to another idle worker.
+            float clearance = keepClear.Count == 0 ? 3f
+                : Math.Min(3f, keepClear.Min(k => (float)(Math.Abs(k.X - cell.X) + Math.Abs(k.Y - cell.Y))));
+            float score = clearance * 2f
+                          + CellCenter(cell).DistanceTo(CellCenter(DoorCell)) * 0.3f
+                          - CellCenter(cell).DistanceTo(worker.Position) * 0.3f
+                          - taken.Count(t => Math.Abs(t.X - cell.X) + Math.Abs(t.Y - cell.Y) <= 1) * 4f;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                best = cell;
+            }
+        }
+        return best;
     }
 
     /// <summary>
