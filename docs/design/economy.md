@@ -16,7 +16,8 @@ many ways to make money, each with its own margins and risks.
 - **Wallet:** dirty cash on your person is just a number, capped at **$5,000**.
 - **Big amounts are physical:**
   - At a property, dirty cash sits on the **cash table** next to the Stash as visible **$1,000 stacks**.
-  - It moves around in **duffel bags** (up to **$10,000** each). You carry up to **3 bags** on your back.
+  - It moves around in **duffel bags** (up to **$10,000** each). You carry up to **3 bags**:
+    the 1st slung on your back, the 2nd and 3rd in each hand.
   - Carrying 3 bags weighs you down: no sprinting, no jumping, and (once weapons exist) no shooting.
   - Bags can go in vehicles (vehicles step).
 - If you receive more than your wallet holds (robbery, sale), the rest goes into duffel bags you carry.

@@ -66,13 +66,49 @@ public partial class PlayerInteraction : Node
         _player.Wallet.Changed += (dirty, clean) => ShowMoney(dirty + clean);
     }
 
-    /// <summary>Items are carried in front; duffel bags go on the back.</summary>
+    /// <summary>Items are carried in front. Duffel bags: 1st slung on the back, 2nd and 3rd in each hand.</summary>
     private void UpdateCarryVisuals()
     {
         bool bags = Carry.Type == ItemType.DuffelBag;
         ItemVisuals.BuildStack(_carryAnchor, bags ? null : Carry.Type, Carry.Count);
-        ItemVisuals.BuildStack(_bagAnchor, bags ? ItemType.DuffelBag : null, Carry.Count);
+
+        foreach (var child in _bagAnchor.GetChildren())
+            child.QueueFree();
+        if (!bags)
+            return;
+        // Positions are relative to BagAnchor (just behind the player at waist height).
+        for (int i = 0; i < Carry.Count; i++)
+        {
+            var bag = ItemVisuals.Create(ItemType.DuffelBag);
+            switch (i)
+            {
+                case 0: // on the back, slung diagonally
+                    bag.Position = new Vector3(0f, 0.35f, 0.08f);
+                    bag.Rotation = new Vector3(0f, 0f, Mathf.DegToRad(-30f));
+                    _bagAnchor.AddChild(MakeSling());
+                    break;
+                case 1: // right hand, hanging at the side
+                    bag.Position = new Vector3(0.5f, -0.4f, -0.42f);
+                    bag.Rotation = new Vector3(0f, Mathf.Pi / 2f, 0f);
+                    break;
+                default: // left hand
+                    bag.Position = new Vector3(-0.5f, -0.4f, -0.42f);
+                    bag.Rotation = new Vector3(0f, Mathf.Pi / 2f, 0f);
+                    break;
+            }
+            _bagAnchor.AddChild(bag);
+        }
     }
+
+    /// <summary>The strap across the chest holding the back bag.</summary>
+    private static MeshInstance3D MakeSling() => new()
+    {
+        Mesh = new BoxMesh { Size = new Vector3(0.05f, 0.95f, 0.03f) },
+        MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.08f, 0.08f, 0.08f) },
+        // Runs from the right shoulder to the left hip, across the front of the body.
+        Position = new Vector3(0f, 0.35f, -0.78f),
+        Rotation = new Vector3(0f, 0f, Mathf.DegToRad(35f)),
+    };
 
     /// <summary>Shows balances for a few seconds (on change, or when the player asks).</summary>
     private void ShowMoney(int change = 0)
