@@ -69,8 +69,9 @@ public partial class StashSlotView : StaticBody3D, IInteractable
     public string Title => Slot.Type is { } type ? $"Stash - {Items.Get(type).Name}" : "Stash - empty shelf";
     public string Status => Slot.Type != null ? $"{Slot.Count} / {StashState.SlotCapacity}" : "Store anything you're carrying";
 
-    public IReadOnlyList<InteractOption> GetOptions(CarryState carry)
+    public IReadOnlyList<InteractOption> GetOptions(Interactor who)
     {
+        var carry = who.Carry;
         var stash = _facility.State;
         var options = new List<InteractOption>();
 

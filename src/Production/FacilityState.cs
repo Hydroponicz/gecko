@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Gecko.Economy;
 using Godot;
 
 namespace Gecko.Production;
@@ -12,6 +13,15 @@ namespace Gecko.Production;
 public sealed class FacilityState
 {
     private readonly List<MachineState> _machines = [];
+    private readonly List<Delivery> _deliveries = [];
+
+    /// <summary>A supply order on its way to the Stash.</summary>
+    public sealed class Delivery(ItemType type, int amount, float seconds)
+    {
+        public ItemType Type { get; } = type;
+        public int Amount { get; internal set; } = amount;
+        public float Remaining { get; internal set; } = seconds;
+    }
 
     public FacilityState(Vector2I size, Rect2I stashArea, int stashSlots)
     {
@@ -24,6 +34,7 @@ public sealed class FacilityState
     public Rect2I StashArea { get; }
     public StashState Stash { get; }
     public IReadOnlyList<MachineState> Machines => _machines;
+    public IReadOnlyList<Delivery> Deliveries => _deliveries;
 
     public event Action<MachineState>? MachineAdded;
     public event Action<MachineState>? MachineRemoved;
@@ -33,6 +44,18 @@ public sealed class FacilityState
     {
         foreach (var machine in _machines)
             machine.Tick(delta, Stash);
+
+        for (int i = _deliveries.Count - 1; i >= 0; i--)
+        {
+            var delivery = _deliveries[i];
+            delivery.Remaining -= delta;
+            if (delivery.Remaining > 0f)
+                continue;
+            // If the Stash is full, the rest waits and is retried.
+            delivery.Amount -= Stash.Add(delivery.Type, delivery.Amount);
+            if (delivery.Amount <= 0)
+                _deliveries.RemoveAt(i);
+        }
     }
 
     public MachineState? MachineAt(Vector2I cell)
@@ -130,6 +153,56 @@ public sealed class FacilityState
             return 0;
         int moved = Stash.Take(slotIndex, Math.Min(amount, carry.RoomFor(type)));
         carry.Add(type, moved);
+        return moved;
+    }
+
+    // ---- Supply actions ----
+
+    /// <summary>Pays from the wallet and schedules a delivery to the Stash. False if you can't afford it.</summary>
+    public bool OrderSupplies(Wallet wallet, IReadOnlyList<ItemType> types)
+    {
+        if (!wallet.SpendDirty(Supplier.OrderCost(types)))
+            return false;
+        foreach (var type in types)
+            _deliveries.Add(new Delivery(type, Supplier.OrderSize, Supplier.DeliverySeconds));
+        return true;
+    }
+
+    // ---- Cash actions. "units" = 1 for a tap, int.MaxValue for a hold. Each returns dollars moved. ----
+
+    /// <summary>Wallet -> Stash, $1,000 per unit.</summary>
+    public int DepositCash(Wallet wallet, int units)
+    {
+        int moved = wallet.TakeDirty((int)Math.Min((long)units * Money.StackValue, wallet.Dirty));
+        Stash.DirtyCash += moved;
+        return moved;
+    }
+
+    /// <summary>Stash -> wallet, $1,000 per unit, up to the wallet cap.</summary>
+    public int WithdrawCash(Wallet wallet, int units)
+    {
+        long wanted = Math.Min((long)units * Money.StackValue, Stash.DirtyCash);
+        int moved = wallet.AddDirty((int)wanted);
+        Stash.DirtyCash -= moved;
+        return moved;
+    }
+
+    /// <summary>Stash -> duffel bags you carry, up to one full bag per unit.</summary>
+    public int PackBags(CarryState carry, int units)
+    {
+        long wanted = Math.Min((long)units * Money.BagCapacity, Stash.DirtyCash);
+        int moved = carry.AddCashToBags((int)wanted);
+        Stash.DirtyCash -= moved;
+        return moved;
+    }
+
+    /// <summary>Duffel bags you carry -> Stash, one bag per unit.</summary>
+    public int UnpackBags(CarryState carry, int units)
+    {
+        int moved = 0;
+        for (int i = 0; i < units && carry.Type == ItemType.DuffelBag; i++)
+            moved += carry.TakeBag();
+        Stash.DirtyCash += moved;
         return moved;
     }
 }

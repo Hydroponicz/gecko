@@ -11,7 +11,7 @@ public sealed class StashSlot
 
 /// <summary>
 /// The Stash at a facility entrance: a few shelf slots, each holding one item type.
-/// (Dirty money for wages arrives with the money step.)
+/// Also holds dirty cash (<see cref="DirtyCash"/>).
 /// </summary>
 public sealed class StashState
 {
@@ -26,6 +26,9 @@ public sealed class StashState
     }
 
     public IReadOnlyList<StashSlot> Slots => _slots;
+
+    /// <summary>Dirty cash kept here, shown as physical $1,000 stacks. Wages will be paid from it.</summary>
+    public int DirtyCash { get; internal set; }
 
     /// <summary>Adds to the slot already holding this type first, then to empty slots. Returns amount added.</summary>
     public int Add(ItemType type, int amount)

@@ -11,6 +11,10 @@ public enum ItemType
     DrySheet,
     BillBundle,
     CounterfeitBrick,
+
+    // Money
+    DuffelBag, // carries up to $10,000; amounts tracked per bag in CarryState
+    CashStack, // $1,000 of real dirty cash; only used to show Stash cash piles
 }
 
 public enum ItemShape
@@ -53,7 +57,17 @@ public static class Items
         // A brick of banknotes: a thick block of bills, shrink-wrapped and banded
         [ItemType.CounterfeitBrick] = new(ItemType.CounterfeitBrick, "Counterfeit Brick", 5, ItemShape.Box,
             new Vector3(0.17f, 0.1f, 0.08f), new Color(0.32f, 0.5f, 0.32f), new Color(0.85f, 0.75f, 0.35f)),
+        // A black duffel bag stuffed with cash, carried on your back
+        [ItemType.DuffelBag] = new(ItemType.DuffelBag, "Duffel Bag", 3, ItemShape.Box,
+            new Vector3(0.55f, 0.26f, 0.28f), new Color(0.1f, 0.1f, 0.12f)),
+        // Used, real bills with a rubber band: greyer than fresh counterfeit
+        [ItemType.CashStack] = new(ItemType.CashStack, "Cash Stack", 0, ItemShape.Box,
+            new Vector3(0.16f, 0.05f, 0.07f), new Color(0.42f, 0.48f, 0.4f), new Color(0.6f, 0.3f, 0.2f)),
     };
+
+    /// <summary>Items that go through production (the debug menu can hand these out).</summary>
+    public static readonly ItemType[] Production =
+        [ItemType.Paper, ItemType.Ink, ItemType.WetSheet, ItemType.DrySheet, ItemType.BillBundle, ItemType.CounterfeitBrick];
 
     public static ItemDef Get(ItemType type) => Defs[type];
 }

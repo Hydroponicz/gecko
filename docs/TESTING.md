@@ -55,3 +55,23 @@ Nothing is saved yet: the factory resets every run.
 - Give 5 of any item, drop carried items, refill the Stash, game speed x1/x2/x5/x10,
   fast-forward machines 60s, test lightbar + rumble (moved here from T / Triangle).
 - Controller info (name, lightbar/rumble/motion support) is shown in the menu.
+
+## Step 3 checklist: money & supplies
+**Money display**
+- [ ] Start with $500. Press Z / D-pad down: balances show top-right for a few seconds.
+- [ ] Balances also pop up whenever money changes, with +/- amount.
+
+**Ordering supplies**
+- [ ] Pay phones: one near spawn, one outside the factory door. Hold L2 / LT / RMB near one.
+- [ ] Menu: Order 5 Paper ($100), 5 Ink ($100), 5 of each ($200). Greyed out if you can't afford it.
+- [ ] Ordering walks you to the phone; money is taken; the phone shows "Delivery in 0:30".
+- [ ] After ~30s (or debug fast-forward) the supplies appear on the Stash shelves.
+- [ ] Build mode now has a **Landline** (cycle past the Packing Table). Placed landlines order supplies too.
+
+**Physical cash** (debug menu: "Give dirty cash" to get money)
+- [ ] Give $15,000: wallet fills to $5,000, the rest appears as a duffel bag on your back.
+- [ ] Cash Table (next to the Stash shelves): Unpack duffel bags -> stacks of cash appear on the table.
+- [ ] Deposit from wallet / Take to wallet: tap = $1,000, hold = all (wallet max $5,000).
+- [ ] Pack duffel bag: tap = one bag (up to $10,000), hold = as many as possible (max 3 bags).
+- [ ] Carrying 3 bags: "weighed down", no sprint, no jump.
+- [ ] Can't pack bags while carrying production items (hands full), and vice versa.

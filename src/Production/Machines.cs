@@ -3,8 +3,15 @@ using Godot;
 
 namespace Gecko.Production;
 
+public enum MachineKind
+{
+    Production,
+    /// <summary>A landline for ordering supplies. Doesn't produce anything.</summary>
+    Phone,
+}
+
 /// <summary>
-/// Static data for a machine type.
+/// Static data for a machine type (anything placed in build mode).
 /// A machine runs up to <see cref="Slots"/> crafts at once. Each craft consumes <see cref="Inputs"/>
 /// and after <see cref="Duration"/> seconds produces <see cref="OutputAmount"/> of <see cref="Output"/>.
 /// </summary>
@@ -21,7 +28,8 @@ public sealed record MachineDef(
     int Slots,
     int InputCapacity,
     int OutputCapacity,
-    bool OutputToStash);
+    bool OutputToStash,
+    MachineKind Kind = MachineKind.Production);
 
 /// <summary>
 /// Counterfeit cash chain. Design rule: every machine holds up to 5 of each input (including what it's
@@ -56,5 +64,12 @@ public static class Machines
         ItemType.CounterfeitBrick, OutputAmount: 1, Duration: 8f,
         Slots: 1, InputCapacity: 5, OutputCapacity: 5, OutputToStash: true);
 
-    public static readonly IReadOnlyList<MachineDef> All = [PrintingPress, DryingRack, Cutter, PackingTable];
+    /// <summary>A wall phone for ordering supplies straight to this property.</summary>
+    public static readonly MachineDef Landline = new(
+        "landline", "Landline", new Vector2I(1, 1), 1.3f, new Color(0.15f, 0.15f, 0.15f),
+        new Dictionary<ItemType, int>(), ItemType.Paper, OutputAmount: 0, Duration: 1f,
+        Slots: 0, InputCapacity: 0, OutputCapacity: 0, OutputToStash: false, Kind: MachineKind.Phone);
+
+    /// <summary>Everything placeable in build mode, in menu order.</summary>
+    public static readonly IReadOnlyList<MachineDef> All = [PrintingPress, DryingRack, Cutter, PackingTable, Landline];
 }

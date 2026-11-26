@@ -19,6 +19,10 @@ public partial class GameHud : CanvasLayer
     private Label _menuStatus = null!;
     private readonly Label[] _menuRows = new Label[MenuRows];
     private Label _menuFooter = null!;
+    private Label _money = null!;
+    private float _moneyTimer;
+
+    private const float MoneyShowSeconds = 4f;
 
     public override void _EnterTree() => Instance = this;
 
@@ -43,6 +47,36 @@ public partial class GameHud : CanvasLayer
         _build.OffsetBottom = 120f;
 
         BuildMenu();
+
+        _money = MakeLabel(fontSize: 26);
+        _money.HorizontalAlignment = HorizontalAlignment.Right;
+        _money.AnchorLeft = 1f;
+        _money.AnchorRight = 1f;
+        _money.AnchorTop = 0f;
+        _money.AnchorBottom = 0f;
+        _money.OffsetLeft = -400f;
+        _money.OffsetRight = -30f;
+        _money.OffsetTop = 20f;
+        _money.OffsetBottom = 160f;
+        _money.AddThemeColorOverride("font_color", new Color(0.55f, 0.9f, 0.55f));
+        _money.Visible = false;
+    }
+
+    /// <summary>Shows the money panel (top right) for a few seconds.</summary>
+    public void ShowMoney(string text)
+    {
+        _money.Text = text;
+        _money.Visible = true;
+        _moneyTimer = MoneyShowSeconds;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_moneyTimer <= 0f)
+            return;
+        _moneyTimer -= (float)delta;
+        if (_moneyTimer <= 0f)
+            _money.Visible = false;
     }
 
     /// <summary>One row of the targeting menu.</summary>
