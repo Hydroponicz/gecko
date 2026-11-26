@@ -1,6 +1,6 @@
 # How to test the current build
 
-1. Open Godot 4.7.2, **Import** the repo folder (select `project.godot`), and press **F5** (Run Project).
+1. Open Godot 4.7.2 **.NET**, **Import** the repo folder (select `project.godot`), and press **F5** (Run Project). The C# project builds automatically on first run.
 2. You spawn in a gray test area with crates and a ramp.
 
 ## Step 1 checklist: player + controller

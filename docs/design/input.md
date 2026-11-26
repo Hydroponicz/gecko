@@ -23,8 +23,21 @@ Status: **draft**
 | Touchpad | Not native | Needs a plugin; may get a basic button press natively |
 | Speaker / mic | Not native | Low priority |
 
-Plan: use native features now (lightbar, rumble, gyro aiming later). Evaluate a plugin for adaptive
-triggers when the gun system is built: their state is unknown and adding one is a commitment.
+## Custom DualSense layer (planned)
+Decision: write our **own** DualSense code instead of third-party plugins, and have it be the
+**only** thing that sends commands to the controller (lightbar, rumble, triggers, haptics), so two
+programs never fight over it.
+
+- Language: **C#** inside the game project, talking to the controller over raw HID
+  (e.g. via the managed HidSharp library). No C++ needed.
+- Platform: **Windows** first. Must support **USB and Bluetooth** (Bluetooth output reports need a CRC32).
+- Features: adaptive triggers, touchpad, lightbar, player LEDs, rumble, mic-mute LED, gyro.
+- HD haptics: **USB only** (the controller is a 4-channel USB audio device; channels 3-4 drive the
+  haptic motors). Bluetooth HD haptics is not feasible. Fallback over Bluetooth: classic rumble.
+- Godot keeps reading buttons/sticks (keeps Input Map, remapping, other controller brands working).
+- All of it sits behind `Gamepad` (src/Core/Gamepad.cs), so gameplay code never changes.
+- Consoles (far future): platform SDKs provide these features natively; the HID layer is PC-only.
+- Risk to test: Godot's own controller driver initialising the lightbar when the pad connects.
 
 Lightbar ideas: flash red/blue while wanted by police, show heat level, crew colour, low health.
 
