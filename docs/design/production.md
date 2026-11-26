@@ -2,6 +2,21 @@
 
 Status: **draft** (paper design, nothing implemented)
 
+## Core concept
+Businesses work like the classic open-world crime-game business loop
+(buy a property → get supplies → produce stock → sell it), **but production is a
+hands-on factory**: the property's interior is an empty shell the player lays out
+and optimizes Satisfactory-style.
+
+| Business-loop piece | How it works here |
+|---|---|
+| Buy the property    | Fixed location on the city map; interior starts empty |
+| Supplies            | Buy them (delivered to the Stash) or steal them in supply jobs |
+| Production          | Player-built machine layout + hand-carry / worker routes |
+| Stock               | Finished product accumulates in the Stash |
+| Selling             | Product is sold for dirty money (sell system TBD) |
+| Upgrades            | Better machines, more/better workers, security (TBD) |
+
 ## Settled decisions
 - The player physically walks inside production facilities and places machines.
 - Machines are always powered (no power/electricity system for now).
