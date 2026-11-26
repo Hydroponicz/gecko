@@ -166,7 +166,7 @@ public partial class BuildMode : Node
         }
 
         // Pick up a placed machine to move it.
-        if (Input.IsActionJustPressed(Actions.Interact) && _lifted == null && _aimedMachine is { } toLift)
+        if (Input.IsActionJustPressed(Actions.BuildMove) && _lifted == null && _aimedMachine is { } toLift)
         {
             _lifted = toLift;
             _liftedFromCell = toLift.Cell;
@@ -229,7 +229,7 @@ public partial class BuildMode : Node
             lines.Add($"BUILD MODE  -  {Prompts.For(Actions.BuildPrev)} {CurrentDef.Name} {Prompts.For(Actions.BuildNext)}");
             var actions = $"{Prompts.For(Actions.BuildPlace, "Place")}   {Prompts.For(Actions.BuildRotate, "Rotate")}";
             if (_aimedMachine != null)
-                actions += $"   {Prompts.For(Actions.Interact, "Move")}   {Prompts.For(Actions.BuildRemove, "Remove")}";
+                actions += $"   {Prompts.For(Actions.BuildMove, "Move")}   {Prompts.For(Actions.BuildRemove, "Remove")}";
             lines.Add(actions);
         }
         lines.Add(Prompts.For(Actions.BuildToggle, "Exit build mode"));

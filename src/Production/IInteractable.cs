@@ -1,15 +1,18 @@
+using System;
+using System.Collections.Generic;
 using Godot;
 
 namespace Gecko.Production;
 
-/// <summary>Whether an interaction puts items in (Give) or takes them out (Take).</summary>
-public enum InteractMode
-{
-    Give,
-    Take,
-}
+/// <summary>
+/// One choice in the targeting menu, e.g. "Load Ink".
+/// Disabled options are still shown (greyed out) with <see cref="Detail"/> explaining why,
+/// so players learn what each object needs.
+/// </summary>
+/// <param name="Execute">Moves up to the given number of items; returns how many moved.</param>
+public sealed record InteractOption(string Label, bool Enabled, string Detail, Func<int, int> Execute);
 
-/// <summary>Something in a facility the player can move items into or out of.</summary>
+/// <summary>Something the player can target (hold L2 / LT / right mouse) and pick options for.</summary>
 public interface IInteractable
 {
     /// <summary>World-space point used for targeting.</summary>
@@ -18,13 +21,17 @@ public interface IInteractable
     /// <summary>Roughly how far the object extends from <see cref="InteractPosition"/>.</summary>
     float InteractRadius { get; }
 
-    /// <summary>What pressing interact would do right now, or null if nothing.
-    /// The mode is locked while the button is held, so holding never flips between give and take.</summary>
-    InteractMode? GetMode(CarryState carry);
+    /// <summary>False once the object is gone (e.g. a machine was removed).</summary>
+    bool IsAvailable { get; }
 
-    /// <summary>Prompt text for a mode, e.g. "Load Paper".</summary>
-    string GetPrompt(InteractMode mode, CarryState carry);
+    /// <summary>Menu title, e.g. "Printing Press".</summary>
+    string Title { get; }
 
-    /// <summary>Moves one item in the given mode. Returns true if anything moved.</summary>
-    bool Interact(CarryState carry, InteractMode mode);
+    /// <summary>One line of state under the title, e.g. "Paper 2/5  Ink 0/5".</summary>
+    string Status { get; }
+
+    /// <summary>Up to 4 options, in button order.</summary>
+    IReadOnlyList<InteractOption> GetOptions(CarryState carry);
+
+    void SetHighlighted(bool highlighted);
 }

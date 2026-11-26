@@ -22,7 +22,14 @@ public static class Actions
     public static readonly StringName LookDown = "look_down";
 
     public static readonly StringName Pause = "pause";
-    public static readonly StringName Interact = "interact";
+
+    // Targeting (RDR2-style): hold to target, then pick an option.
+    public static readonly StringName Target = "target";
+    public static readonly StringName Option1 = "option_1";
+    public static readonly StringName Option2 = "option_2";
+    public static readonly StringName Option3 = "option_3";
+    public static readonly StringName Option4 = "option_4";
+    public static readonly StringName[] Options = [Option1, Option2, Option3, Option4];
 
     // Build mode (only available inside facilities)
     public static readonly StringName BuildToggle = "build_toggle";
@@ -31,6 +38,7 @@ public static class Actions
     public static readonly StringName BuildRotate = "build_rotate";
     public static readonly StringName BuildPlace = "build_place";
     public static readonly StringName BuildRemove = "build_remove";
+    public static readonly StringName BuildMove = "build_move";
 
     public static readonly StringName DebugLightbar = "debug_lightbar";
 }

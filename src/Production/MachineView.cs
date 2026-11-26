@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using Godot;
 
@@ -10,6 +11,7 @@ public partial class MachineView : StaticBody3D, IInteractable
     private Label3D _label = null!;
     private Node3D _outputStack = null!;
     private int _shownOutput = -1;
+    private StandardMaterial3D _material = null!;
 
     public MachineState State { get; private set; } = null!;
 
@@ -23,10 +25,11 @@ public partial class MachineView : StaticBody3D, IInteractable
         var def = state.Def;
         var size = new Vector3(def.Footprint.X * 0.9f, def.Height, def.Footprint.Y * 0.9f);
 
+        _material = new StandardMaterial3D { AlbedoColor = def.Color };
         var body = new MeshInstance3D
         {
             Mesh = new BoxMesh { Size = size },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = def.Color },
+            MaterialOverride = _material,
             Position = Vector3.Up * def.Height / 2f,
         };
         AddChild(body);
@@ -86,26 +89,56 @@ public partial class MachineView : StaticBody3D, IInteractable
         }
     }
 
-    public InteractMode? GetMode(CarryState carry)
+    public bool IsAvailable => IsInstanceValid(this) && Visible;
+    public string Title => State.Def.Name;
+
+    public string Status
     {
-        if (carry.Type is { } type)
+        get
         {
-            if (State.InputRoom(type) > 0)
-                return InteractMode.Give;
-            if (type == State.Def.Output && State.OutputCount > 0 && carry.RoomFor(type) > 0)
-                return InteractMode.Take;
-            return null;
+            var text = new StringBuilder();
+            foreach (var input in State.Def.Inputs.Keys)
+                text.Append($"{Items.Get(input).Name} {State.InputCount(input)}/{State.Def.InputCapacity}   ");
+            text.Append($"-> {Items.Get(State.Def.Output).Name}: {State.OutputCount}");
+            return text.ToString();
         }
-        return State.OutputCount > 0 ? InteractMode.Take : null;
     }
 
-    public string GetPrompt(InteractMode mode, CarryState carry) => mode == InteractMode.Give
-        ? $"Load {Items.Get(carry.Type ?? State.Def.Output).Name}"
-        : $"Take {Items.Get(State.Def.Output).Name}";
+    public IReadOnlyList<InteractOption> GetOptions(CarryState carry)
+    {
+        var options = new List<InteractOption>();
+        var facility = _facility.State;
 
-    public bool Interact(CarryState carry, InteractMode mode) => mode == InteractMode.Give
-        ? _facility.State.LoadMachine(State, carry, 1) > 0
-        : _facility.State.TakeFromMachine(State, carry, 1) > 0;
+        foreach (var input in State.Def.Inputs.Keys)
+        {
+            string name = Items.Get(input).Name;
+            bool holding = carry.Type == input;
+            bool room = State.InputRoom(input) > 0;
+            string detail = !holding ? "none in hand" : !room ? "machine full" : $"{carry.Count} in hand";
+            options.Add(new InteractOption($"Load {name}", holding && room, detail,
+                amount => facility.LoadMachine(State, carry, amount)));
+        }
+
+        var output = State.Def.Output;
+        if (!State.Def.OutputToStash || State.OutputCount > 0)
+        {
+            bool ready = State.OutputCount > 0;
+            bool canCarry = carry.RoomFor(output) > 0;
+            string detail = !ready ? "none ready"
+                : !canCarry ? (carry.Type == output ? "hands full" : "holding something else")
+                : $"{State.OutputCount} ready";
+            options.Add(new InteractOption($"Take {Items.Get(output).Name}", ready && canCarry, detail,
+                amount => facility.TakeFromMachine(State, carry, amount)));
+        }
+        return options;
+    }
+
+    public void SetHighlighted(bool highlighted)
+    {
+        _material.EmissionEnabled = highlighted;
+        _material.Emission = new Color(1f, 0.9f, 0.6f);
+        _material.EmissionEnergyMultiplier = 0.35f;
+    }
 
     private static string ProgressBar(float progress)
     {

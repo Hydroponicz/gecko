@@ -11,6 +11,10 @@ Status: **draft**
 - Button prompts on screen switch automatically between keyboard and PlayStation glyphs depending on the last device used.
 - Machine placement aims from the player/camera and snaps to the grid, so it works with a stick as well as a mouse.
 
+## Targeting (RDR2-style)
+Hold **Target** (L2 / LT / right mouse) to lock onto an object or (later) an NPC, then choose an
+option with the face buttons / E F Q G. Tap = one item, hold = all. In combat the same button aims.
+
 ## Supported controllers
 Godot reads buttons and sticks for **all** controllers (Xbox, PlayStation, Steam Input, generic),
 using its built-in SDL controller database. We do not write our own button reading:

@@ -32,6 +32,7 @@ public partial class Player : CharacterBody3D
     private Node3D _pitch = null!;
     private SpringArm3D _springArm = null!;
     private BuildMode _buildMode = null!;
+    private PlayerInteraction _interaction = null!;
 
     private float _gravity;
     private bool _sprintToggled;
@@ -44,6 +45,7 @@ public partial class Player : CharacterBody3D
         _pitch = GetNode<Node3D>("CameraYaw/CameraPitch");
         _springArm = GetNode<SpringArm3D>("CameraYaw/CameraPitch/SpringArm3D");
         _buildMode = GetNode<BuildMode>("BuildMode");
+        _interaction = GetNode<PlayerInteraction>("PlayerInteraction");
 
         _gravity = (float)ProjectSettings.GetSetting("physics/3d/default_gravity");
         _springArm.AddExcludedObject(GetRid());
@@ -83,7 +85,8 @@ public partial class Player : CharacterBody3D
         // Gravity and jumping
         if (!IsOnFloor())
             velocity.Y -= _gravity * dt;
-        else if (Input.IsActionJustPressed(Actions.Jump) && !_buildMode.Active) // Cross places machines in build mode
+        // Cross is "place" in build mode and option 4 while targeting.
+        else if (Input.IsActionJustPressed(Actions.Jump) && !_buildMode.Active && !_interaction.IsTargeting)
             velocity.Y = JumpVelocity;
 
         // Movement relative to where the camera faces. Analog sticks keep their partial tilt.

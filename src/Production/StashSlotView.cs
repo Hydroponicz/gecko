@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace Gecko.Production;
@@ -13,6 +14,7 @@ public partial class StashSlotView : StaticBody3D, IInteractable
     private Node3D _display = null!;
     private ItemType? _shownType;
     private int _shownCount = -1;
+    private StandardMaterial3D _material = null!;
 
     public Vector3 InteractPosition => GlobalPosition + Vector3.Up * 0.6f;
     public float InteractRadius => 0.5f;
@@ -24,10 +26,11 @@ public partial class StashSlotView : StaticBody3D, IInteractable
         _facility = facility;
         _index = index;
         var size = new Vector3(0.9f, ShelfHeight, 0.8f);
+        _material = new StandardMaterial3D { AlbedoColor = new Color(0.3f, 0.3f, 0.32f) };
         AddChild(new MeshInstance3D
         {
             Mesh = new BoxMesh { Size = size },
-            MaterialOverride = new StandardMaterial3D { AlbedoColor = new Color(0.3f, 0.3f, 0.32f) },
+            MaterialOverride = _material,
             Position = Vector3.Up * ShelfHeight / 2f,
         });
         AddChild(new CollisionShape3D
@@ -59,18 +62,43 @@ public partial class StashSlotView : StaticBody3D, IInteractable
         ItemVisuals.BuildStack(_display, Slot.Type, Slot.Count, 5);
     }
 
-    public InteractMode? GetMode(CarryState carry)
+    public bool IsAvailable => IsInstanceValid(this);
+    public string Title => Slot.Type is { } type ? $"Stash - {Items.Get(type).Name}" : "Stash - empty shelf";
+    public string Status => Slot.Type != null ? $"{Slot.Count} / {StashState.SlotCapacity}" : "Store anything you're carrying";
+
+    public IReadOnlyList<InteractOption> GetOptions(CarryState carry)
     {
+        var stash = _facility.State;
+        var options = new List<InteractOption>();
+
+        if (Slot.Type is { } stored)
+        {
+            bool canCarry = carry.RoomFor(stored) > 0;
+            string detail = !canCarry
+                ? (carry.Type == stored ? "hands full" : "holding something else")
+                : $"{Slot.Count} here";
+            options.Add(new InteractOption($"Take {Items.Get(stored).Name}", canCarry, detail,
+                amount => stash.TakeFromStash(_index, carry, amount)));
+        }
+
         if (carry.Type is { } carried)
-            return _facility.State.Stash.RoomFor(carried) > 0 ? InteractMode.Give : null;
-        return Slot.Type != null ? InteractMode.Take : null;
+        {
+            bool room = stash.Stash.RoomFor(carried) > 0;
+            options.Add(new InteractOption($"Store {Items.Get(carried).Name}", room,
+                room ? $"{carry.Count} in hand" : "stash full",
+                amount => stash.StoreInStash(carry, amount)));
+        }
+        else
+        {
+            options.Add(new InteractOption("Store", false, "nothing in hand", _ => 0));
+        }
+        return options;
     }
 
-    public string GetPrompt(InteractMode mode, CarryState carry) => mode == InteractMode.Give
-        ? $"Store {Items.Get(carry.Type ?? ItemType.Paper).Name}"
-        : $"Take {(Slot.Type is { } type ? Items.Get(type).Name : "")}";
-
-    public bool Interact(CarryState carry, InteractMode mode) => mode == InteractMode.Give
-        ? _facility.State.StoreInStash(carry, 1) > 0
-        : _facility.State.TakeFromStash(_index, carry, 1) > 0;
+    public void SetHighlighted(bool highlighted)
+    {
+        _material.EmissionEnabled = highlighted;
+        _material.Emission = new Color(1f, 0.9f, 0.6f);
+        _material.EmissionEnergyMultiplier = 0.35f;
+    }
 }

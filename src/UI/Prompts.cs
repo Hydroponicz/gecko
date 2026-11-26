@@ -59,6 +59,11 @@ public static class Prompts
         string? fallback = null;
         foreach (var inputEvent in events)
         {
+            if (inputEvent is InputEventJoypadMotion motion)
+            {
+                fallback ??= TriggerName(motion.Axis, playStation);
+                continue;
+            }
             if (inputEvent is not InputEventJoypadButton button)
                 continue;
             // PlayStation prefers the touchpad; other pads have no touchpad.
@@ -69,6 +74,13 @@ public static class Prompts
         }
         return fallback ?? "?";
     }
+
+    private static string? TriggerName(JoyAxis axis, bool playStation) => axis switch
+    {
+        JoyAxis.TriggerLeft => playStation ? "L2" : "LT",
+        JoyAxis.TriggerRight => playStation ? "R2" : "RT",
+        _ => null,
+    };
 
     private static string MouseName(MouseButton button) => button switch
     {

@@ -68,7 +68,7 @@ The Stash is also a valid worker route point (e.g. "Stash → Printing Press").
 | Printing Press | 1 Paper + 1 Ink  | 1 Wet Sheet         | 10s   | |
 | Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Holds 6 sheets at once, each dries on its own timer — a capacity puzzle, not a speed one |
 | Cutter         | 1 Dry Sheet      | 4 Loose Bills       | 5s    | |
-| Packing Table  | 10 Loose Bills   | 1 Counterfeit Brick | 8s    | |
+| Packing Table  | 10 Loose Bills   | 1 Counterfeit Brick | 8s    | A brick = banded block of banknotes |
 
 All numbers are placeholders to be tuned in play. Live values: `src/Production/Machines.cs`.
 
@@ -77,17 +77,24 @@ All numbers are placeholders to be tuned in play. Live values: `src/Production/M
 |---|---|
 | Paper, Ink, Wet Sheet, Dry Sheet | 5 |
 | Loose Bills | 20 (small bundles) |
-| Counterfeit Brick | 4 (boxes) |
+| Counterfeit Brick | 4 (bricks of banknotes) |
 
 ### Build mode
 - Only available while standing inside a facility (frees the button elsewhere).
 - Keyboard: Tab toggle, wheel = change machine, R rotate, LMB place, E pick up/move, X remove.
+- Build mode keeps direct aim controls (no targeting menu).
 - Controller: Touchpad/View toggle, D-pad left/right change, R1/RB rotate, Cross/A place,
   Square/X pick up/move, Circle/B remove.
 - Removing a machine puts its contents in the Stash.
 
-### Interaction
-- Tap interact = move one item; hold = keep moving them. Direction (give/take) is locked for the hold.
+### Interaction (RDR2-style targeting)
+- Hold **Target** (L2 / LT / right mouse) to lock onto the object the camera faces; it highlights.
+- A menu lists up to 4 options, each on its own button
+  (Square/Triangle/Circle/Cross, X/Y/B/A, E/F/Q/G).
+- Unavailable options stay visible, greyed out, with the reason ("none in hand", "machine full"),
+  so players learn what each machine needs.
+- **Tap** an option = move 1 item. **Hold** it (~0.45s, a bar fills) = move as many as possible.
+- The same Target button will aim weapons in combat and give NPC options later.
 - The Stash is a row of 4 shelves inside the door; each shelf holds one item type (50 max).
 
 ### Rules

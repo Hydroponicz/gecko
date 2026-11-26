@@ -30,7 +30,13 @@ public partial class InputSetup : Node
 
         // General
         Bind(Actions.Pause, KeyEvent(Key.Escape), ButtonEvent(JoyButton.Start)); // Options
-        Bind(Actions.Interact, KeyEvent(Key.E), ButtonEvent(JoyButton.X)); // Square
+
+        // Targeting: hold L2/LT or right mouse, then choose an option.
+        Bind(Actions.Target, MouseEvent(MouseButton.Right), AxisEvent(JoyAxis.TriggerLeft, 1f));
+        Bind(Actions.Option1, KeyEvent(Key.E), ButtonEvent(JoyButton.X)); // Square
+        Bind(Actions.Option2, KeyEvent(Key.F), ButtonEvent(JoyButton.Y)); // Triangle
+        Bind(Actions.Option3, KeyEvent(Key.Q), ButtonEvent(JoyButton.B)); // Circle
+        Bind(Actions.Option4, KeyEvent(Key.G), ButtonEvent(JoyButton.A)); // Cross
 
         // Build mode. Touchpad on PlayStation, View on Xbox.
         Bind(Actions.BuildToggle, KeyEvent(Key.Tab), ButtonEvent(JoyButton.Touchpad), ButtonEvent(JoyButton.Back));
@@ -39,6 +45,7 @@ public partial class InputSetup : Node
         Bind(Actions.BuildRotate, KeyEvent(Key.R), ButtonEvent(JoyButton.RightShoulder)); // R1
         Bind(Actions.BuildPlace, MouseEvent(MouseButton.Left), ButtonEvent(JoyButton.A)); // Cross
         Bind(Actions.BuildRemove, KeyEvent(Key.X), ButtonEvent(JoyButton.B)); // Circle
+        Bind(Actions.BuildMove, KeyEvent(Key.E), ButtonEvent(JoyButton.X)); // Square
 
         // Debug
         Bind(Actions.DebugLightbar, KeyEvent(Key.T), ButtonEvent(JoyButton.Y)); // Triangle

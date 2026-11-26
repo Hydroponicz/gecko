@@ -18,18 +18,23 @@ Report anything that feels off: speeds, camera distance, sensitivity, etc.
 ## Step 2 checklist: factory gray box
 The warehouse is the brick-walled room behind the spawn (walk forward-right). The door is on the side facing spawn.
 
-**Carrying** (outside build mode)
-- [ ] Stash shelves inside the door show Paper x30 and Ink x30.
-- [ ] Prompt at the bottom shows the right button for your device (E / Square / X).
-- [ ] Tap interact on a shelf: take one item. Hold: keep taking up to the carry limit.
-- [ ] You can only carry one item type; the carried items show as a stack in front of you.
-- [ ] Interacting with a shelf while carrying stores items back.
+**Targeting & carrying** (outside build mode)
+- [ ] Near a shelf or machine, the bottom prompt shows `[RMB / L2 / LT] Interact`.
+- [ ] Hold RMB / L2 / LT: the object you're facing lights up and a menu appears bottom-right.
+- [ ] Each option shows its button (E/F/Q/G, Square/Triangle/Circle/Cross, X/Y/B/A).
+- [ ] Options you can't do are greyed out with a reason (e.g. "Load Ink (none in hand)").
+- [ ] **Tap** an option: exactly one item moves (you can take ink one at a time).
+- [ ] **Hold** an option: a bar fills, then as many items as possible move.
+- [ ] Stash shelf shows both "Take" and "Store", so you can top up what you're carrying.
+- [ ] You can't jump with Cross/A while targeting.
+- [ ] Only one item type can be carried; carried items stack in front of you.
+- [ ] Counterfeit bricks look like green banded bricks of banknotes.
 
 **Build mode**
 - [ ] The build prompt (Tab / Touchpad / View) only appears inside the warehouse.
 - [ ] In build mode: grid appears, see-through preview follows where the camera aims, green = OK, red = blocked.
 - [ ] Wheel / D-pad left-right changes machine; R / R1 / RB rotates; LMB / Cross / A places (no jumping).
-- [ ] Aim at a placed machine: interact picks it up to move it; X / Circle / B removes it.
+- [ ] Aim at a placed machine: E / Square / X picks it up to move it; X / Circle / B removes it.
 - [ ] Can't place on the Stash, outside the room, on other machines, or where you stand.
 - [ ] Leaving the room (or Tab / Touchpad) exits build mode; a picked-up machine returns to its spot.
 
