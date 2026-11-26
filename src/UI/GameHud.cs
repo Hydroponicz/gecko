@@ -21,6 +21,8 @@ public partial class GameHud : CanvasLayer
     private Label _menuFooter = null!;
     private Label _money = null!;
     private float _moneyTimer;
+    private Label _notice = null!;
+    private float _noticeTimer;
 
     private const float MoneyShowSeconds = 4f;
 
@@ -60,6 +62,22 @@ public partial class GameHud : CanvasLayer
         _money.OffsetBottom = 160f;
         _money.AddThemeColorOverride("font_color", new Color(0.55f, 0.9f, 0.55f));
         _money.Visible = false;
+
+        _notice = MakeLabel(fontSize: 22);
+        _notice.AnchorLeft = 0f;
+        _notice.AnchorRight = 1f;
+        _notice.AnchorTop = 0f;
+        _notice.AnchorBottom = 0f;
+        _notice.OffsetTop = 130f;
+        _notice.OffsetBottom = 200f;
+        _notice.AddThemeColorOverride("font_color", new Color(1f, 0.9f, 0.5f));
+    }
+
+    /// <summary>A short message at the top of the screen, e.g. payday results.</summary>
+    public void Notify(string text)
+    {
+        _notice.Text = text;
+        _noticeTimer = 6f;
     }
 
     /// <summary>Shows the money panel (top right) for a few seconds.</summary>
@@ -72,6 +90,12 @@ public partial class GameHud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        if (_noticeTimer > 0f)
+        {
+            _noticeTimer -= (float)delta;
+            if (_noticeTimer <= 0f)
+                _notice.Text = "";
+        }
         if (_moneyTimer <= 0f)
             return;
         _moneyTimer -= (float)delta;

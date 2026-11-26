@@ -104,6 +104,21 @@ public partial class DebugMenu : CanvasLayer
                 facility.State.Tick(60f);
             _lastMessage = "Machines advanced 60s";
         }));
+        _entries.Add(new Entry(() => $"Skip to 5:59 AM (payday at 6:00)   [{ClockNode.Clock.TimeText}]", () =>
+        {
+            ClockNode.Clock.SkipTo(5 * 60 + 59);
+            _lastMessage = "Clock set to 5:59 AM";
+        }));
+        _entries.Add(new Entry(() => "Hire a worker instantly (wages still apply)", () =>
+        {
+            foreach (var facility in Facilities())
+            {
+                var worker = facility.State.HireWorker(0f);
+                _lastMessage = worker != null
+                    ? $"Hired worker #{worker.Id}"
+                    : $"Worker cap reached ({facility.State.WorkerCap} for this layout)";
+            }
+        }));
         _entries.Add(new Entry(() => "Test lightbar + rumble", () =>
         {
             _colorIndex = (_colorIndex + 1) % TestColors.Length;

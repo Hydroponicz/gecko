@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace Gecko.Production;
@@ -23,6 +24,7 @@ public partial class FacilityNode : Node3D
     private readonly Dictionary<MachineState, MachineView> _views = new();
     private readonly List<StashSlotView> _stashViews = [];
     private CashSpotView _cashSpot = null!;
+    private readonly Dictionary<WorkerState, WorkerView> _workerViews = new();
     private Node3D _grid = null!;
 
     public FacilityState State { get; private set; } = null!;
@@ -41,7 +43,8 @@ public partial class FacilityNode : Node3D
         int doorStart = SizeCells.X / 2 - DoorWidth / 2;
         int stashWidth = StashSlots + 1;
         var stashArea = new Rect2I(Mathf.Max(0, doorStart - stashWidth), SizeCells.Y - 1, stashWidth, 1);
-        State = new FacilityState(SizeCells, stashArea, StashSlots);
+        var doorArea = new Rect2I(doorStart, SizeCells.Y - 1, DoorWidth, 1);
+        State = new FacilityState(SizeCells, stashArea, StashSlots, doorArea);
 
         // Test supplies until buying supplies exists (roadmap step 3).
         State.Stash.Add(ItemType.Paper, 30);
@@ -55,9 +58,52 @@ public partial class FacilityNode : Node3D
         State.MachineAdded += OnMachineAdded;
         State.MachineRemoved += OnMachineRemoved;
         State.MachineMoved += machine => _views[machine].SyncTransform();
+        State.WorkerAdded += OnWorkerAdded;
+        State.WorkerRemoved += OnWorkerRemoved;
+        Core.ClockNode.Clock.Payday += OnPayday;
     }
 
-    public override void _PhysicsProcess(double delta) => State.Tick((float)delta);
+    public override void _ExitTree() => Core.ClockNode.Clock.Payday -= OnPayday;
+
+    private void OnPayday()
+    {
+        int before = State.Workers.Count(w => w.Phase != WorkerPhase.Leaving);
+        int paid = State.PayWages();
+        int quit = before - State.Workers.Count(w => w.Phase != WorkerPhase.Leaving);
+        if (before == 0)
+            return;
+        string text = $"Payday at {DisplayName}: {Economy.Money.Format(paid)} in wages";
+        if (quit > 0)
+            text += $"\n{quit} worker(s) quit: not enough cash on the cash table";
+        UI.GameHud.Instance.Notify(text);
+    }
+
+    private void OnWorkerAdded(WorkerState worker)
+    {
+        var view = new WorkerView { Name = $"Worker{worker.Id}" };
+        AddChild(view);
+        view.Setup(this, worker);
+        _workerViews[worker] = view;
+    }
+
+    private void OnWorkerRemoved(WorkerState worker)
+    {
+        if (_workerViews.Remove(worker, out var view))
+            view.QueueFree();
+    }
+
+    public override void _PhysicsProcess(double delta)
+    {
+        // Workers steer around the player.
+        Vector2I? playerCell = null;
+        if (GetTree().GetFirstNodeInGroup(Actors.Player.Group) is Node3D player && ContainsPoint(player.GlobalPosition))
+        {
+            var grid = WorldToGrid(player.GlobalPosition);
+            playerCell = new Vector2I(Mathf.FloorToInt(grid.X), Mathf.FloorToInt(grid.Y));
+        }
+        State.SetPlayerCell(playerCell);
+        State.Tick((float)delta);
+    }
 
     public bool ContainsPoint(Vector3 worldPosition)
     {
@@ -108,6 +154,11 @@ public partial class FacilityNode : Node3D
         foreach (var view in _stashViews)
             yield return view;
         yield return _cashSpot;
+        foreach (var view in _workerViews.Values)
+        {
+            if (view.Visible)
+                yield return view;
+        }
     }
 
     private void OnMachineAdded(MachineState machine)

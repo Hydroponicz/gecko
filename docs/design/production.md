@@ -22,10 +22,8 @@ and optimizes Satisfactory-style.
 - Machines are always powered (no power/electricity system for now).
 - Transport between machines:
   1. **Early game:** the player hand-carries items between machines.
-  2. **Later:** the player hires criminals to work the facility (automation → passive income).
-     Workers use the **assigned routes** model: each worker is given a route
-     ("take from machine A, put into machine B") and physically walks it, acting as a living conveyor.
-     Layout and walking distance therefore matter.
+  2. **Later:** the player hires criminals to work the facility (automation -> passive income).
+     Workers are **automatic** (see Workers): they split the layout's jobs between them.
   4. **No worker crowds:** a full basic chain should run with roughly 4 workers, not dozens.
      Scaling up comes from better carrying (e.g. hand truck / dolly unlocks), not from piling on more workers.
 
@@ -42,18 +40,32 @@ Every production building has one **Stash** at its entrance. It holds:
 
 The Stash is also a valid worker route point (e.g. "Stash → Printing Press").
 
-## Workers
-| Topic          | Rule |
-|----------------|------|
-| Route          | One pickup point → one drop-off point |
-| What they carry| Whatever the drop-off point accepts (e.g. on "Stash → Press" a worker brings Paper *and* Ink) |
-| Blocked        | Pickup empty or drop-off full → worker waits (shows the bottleneck) |
-| Wages          | Dirty money, paid daily from the Stash; unpaid → they quit |
-| Carry limit    | Same per-item limits as the player (see Carry limits) |
-| Hiring         | Contact menu for now; later the crew/hierarchy system |
-| Stats          | None yet — all workers identical |
-  3. **Conveyors:** not planned unless they turn out to make sense.
-- Passive ("idle") income comes from automated facilities.
+## Workers (automatic)
+No manual routes. The game works out the **jobs** from the layout: every "move items from A to B"
+connection (e.g. Stash -> Printing Press, Printing Press -> Drying Rack, ...). Jobs are split evenly:
+job *j* goes to worker *j mod (number of workers)*. 1 worker does everything; at the cap each worker
+has one job. Each worker always does their most urgent job (destination with the most room).
+
+| Topic | Rule |
+|---|---|
+| Worker cap | min(jobs in the layout, floor area / 35 m^2). Current warehouse: 4 |
+| Hiring | Phone (pay phone or landline): "Hire a worker", $200/day, arrives ~10s later |
+| Firing | Target the worker: "Let go" (they drop items at the Stash and walk out) |
+| Wages | 6:00 AM every game day from the property's cash table; unpaid workers quit |
+| Clock | 1 game day = 48 real minutes; shown in the money pop-up |
+| Carrying | Same rules as the player: one type, up to 5, same take/give action |
+| Stats | None yet; all workers identical |
+
+### Pathfinding and fail-safes
+Workers path on the building grid (A*), avoid each other and the player, and reserve the next cell.
+1. Blocked 0.6s: re-plan around people.
+2. Blocked 2.5s: the lower-priority worker steps aside (newer hires give way; everyone gives way to the player).
+3. No progress 8s: teleport to the nearest free safe cell and restart the task (keeps carried items).
+4. Inside a machine (placed on them): teleport out immediately.
+5. Destination unreachable: status "Can't reach X", retry every 3s.
+6. Destination full for 15s: take the items back to the Stash.
+7. Blocked by the player: wait politely ("Waiting for you to move"); not counted as stuck.
+The doorway is kept clear (no machines) so workers can always get in and out.
 
 ## Chain 1: Counterfeit Cash
 

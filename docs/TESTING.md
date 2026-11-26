@@ -75,3 +75,27 @@ Nothing is saved yet: the factory resets every run.
 - [ ] Pack duffel bag: tap = one bag (up to $10,000), hold = as many as possible (max 3 bags).
 - [ ] Carrying 3 bags: "weighed down", no sprint, no jump.
 - [ ] Can't pack bags while carrying production items (hands full), and vice versa.
+
+## Step 4 checklist: workers
+**Hiring** (place all 4 machines first; give yourself cash with the debug menu)
+- [ ] Phone shows "Hire a worker ($200/day - 0/4)". Cap is 4 with all machines; fewer machines = lower cap.
+- [ ] Hiring: an orange worker walks in through the door ~10s later. Debug menu can hire instantly.
+- [ ] Clock appears at the top of the money pop-up (Z / D-pad down).
+
+**Automatic work** (supplies in the Stash)
+- [ ] 1 worker: runs the whole chain alone (Stash -> Press -> Rack -> Cutter -> Packing).
+- [ ] 2 workers: split the work (one does Stash->Press + Rack->Cutter, the other the rest).
+- [ ] 4 workers: one job each. Bricks appear in the Stash with no help from you.
+- [ ] Labels above workers show what they're doing; they lean in to take/give like you do.
+
+**Avoidance & fail-safes**
+- [ ] Workers walk around machines, each other, and you. You bump into them (they're solid).
+- [ ] Stand in a narrow gap: they wait ("Waiting for you to move") and continue when you move.
+- [ ] Build mode: place a machine on a worker -> they pop out to a free spot and carry on.
+- [ ] Wall a machine in completely -> "Can't reach the ..." until you open a path.
+- [ ] Machines can't be placed in the doorway.
+
+**Wages**
+- [ ] Put cash on the cash table, debug "Skip to 5:59 AM": at 6:00 a payday message shows; $200 per worker leaves the table.
+- [ ] Not enough cash: unpaid workers quit and walk out.
+- [ ] Target a worker -> "Let go": they drop their items at the Stash and leave.

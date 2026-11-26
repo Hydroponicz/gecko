@@ -113,7 +113,12 @@ public partial class PlayerInteraction : Node
     /// <summary>Shows balances for a few seconds (on change, or when the player asks).</summary>
     private void ShowMoney(int change = 0)
     {
-        var lines = new List<string> { Money.Format(_player.Wallet.Dirty), $"Bank  {Money.Format(_player.Wallet.Clean)}" };
+        var lines = new List<string>
+        {
+            ClockNode.Clock.TimeText,
+            Money.Format(_player.Wallet.Dirty),
+            $"Bank  {Money.Format(_player.Wallet.Clean)}",
+        };
         if (Carry.Type == ItemType.DuffelBag)
             lines.Add($"Bags  {Money.Format(Carry.TotalBagCash)}");
         if (change != 0)

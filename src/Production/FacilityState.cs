@@ -10,7 +10,7 @@ namespace Gecko.Production;
 /// Plain data, no visuals. Every change goes through a method here (an "action"),
 /// so co-op can later send the same actions over the network.
 /// </summary>
-public sealed class FacilityState
+public sealed partial class FacilityState
 {
     private readonly List<MachineState> _machines = [];
     private readonly List<Delivery> _deliveries = [];
@@ -23,15 +23,19 @@ public sealed class FacilityState
         public float Remaining { get; internal set; } = seconds;
     }
 
-    public FacilityState(Vector2I size, Rect2I stashArea, int stashSlots)
+    public FacilityState(Vector2I size, Rect2I stashArea, int stashSlots, Rect2I doorArea)
     {
         Size = size;
         StashArea = stashArea;
+        DoorArea = doorArea;
         Stash = new StashState(stashSlots);
     }
 
     public Vector2I Size { get; }
     public Rect2I StashArea { get; }
+
+    /// <summary>Inside the doorway: kept clear so people can always get in and out.</summary>
+    public Rect2I DoorArea { get; }
     public StashState Stash { get; }
     public IReadOnlyList<MachineState> Machines => _machines;
     public IReadOnlyList<Delivery> Deliveries => _deliveries;
@@ -44,6 +48,7 @@ public sealed class FacilityState
     {
         foreach (var machine in _machines)
             machine.Tick(delta, Stash);
+        TickWorkers(delta);
 
         for (int i = _deliveries.Count - 1; i >= 0; i--)
         {
@@ -75,7 +80,7 @@ public sealed class FacilityState
         var rect = new Rect2I(cell, MachineState.RotateFootprint(def.Footprint, rotation));
         if (rect.Position.X < 0 || rect.Position.Y < 0 || rect.End.X > Size.X || rect.End.Y > Size.Y)
             return false;
-        if (rect.Intersects(StashArea))
+        if (rect.Intersects(StashArea) || rect.Intersects(DoorArea))
             return false;
         if (blocked is { } b && rect.Intersects(b))
             return false;

@@ -32,6 +32,16 @@ public static class PhoneMenu
                 affordable ? Money.Format(cost) : $"{Money.Format(cost)} - not enough cash",
                 _ => facility.State.OrderSupplies(who.Wallet, order) ? 1 : 0));
         }
+
+        // Hiring: cap depends on the layout's jobs and the building size.
+        var state = facility.State;
+        int hired = state.Workers.Count(w => w.Phase != WorkerPhase.Leaving);
+        int cap = state.WorkerCap;
+        string detail = cap == 0 ? "place machines first"
+            : hired >= cap ? $"{hired}/{cap} - full for this layout"
+            : $"{Money.Format(FacilityState.WorkerWage)}/day - {hired}/{cap}";
+        options.Add(new InteractOption("Hire a worker", hired < cap, detail,
+            _ => state.HireWorker() != null ? 1 : 0));
         return options;
     }
 

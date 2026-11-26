@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 [autoload]
 
 InputSetup="*res://src/Core/InputSetup.cs"
+Clock="*res://src/Core/ClockNode.cs"
 Gamepad="*res://src/Core/Gamepad.cs"
 GameHud="*res://src/UI/GameHud.cs"
 DebugMenu="*res://src/UI/DebugMenu.cs"
