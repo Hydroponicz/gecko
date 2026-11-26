@@ -2,7 +2,7 @@
 
 One testable slice at a time. Each slice is built on `preview`, tested, then merged to `main`.
 
-1. **Player** — third-person movement + camera, keyboard/mouse + PS5 DualSense from day one.
+1. ⏳ **Player** (built, awaiting test) — third-person movement + camera, keyboard/mouse + PS5 DualSense from day one.
 2. **Factory gray box** — empty room, placement grid, the four machines, Stash, hand-carrying.
 3. **Money & supplies** — dirty cash HUD, buying supplies.
 4. **Workers & routes**
