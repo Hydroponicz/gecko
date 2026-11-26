@@ -29,6 +29,11 @@ and optimizes Satisfactory-style.
   4. **No worker crowds:** a full basic chain should run with roughly 4 workers, not dozens.
      Scaling up comes from better carrying (e.g. hand truck / dolly unlocks), not from piling on more workers.
 
+## Placement
+- A bought property's interior is an empty floor with a grid.
+- Machines can be placed **anywhere** on the grid (free layout); walking distance makes layout matter.
+- Placed machines can be picked up and moved at any time for a **full refund**.
+
 ## The Stash (facility entrance)
 Every production building has one **Stash** at its entrance. It holds:
 - **Raw materials** — supplier deliveries land here (Paper, Ink).
@@ -71,6 +76,16 @@ All numbers are placeholders to be tuned in play.
 - Each machine has a small input buffer and output buffer; it stops when output is full.
 - Raw inputs (Paper, Ink) are bought from a supplier and delivered to the Stash.
 - Counterfeit Bricks are product, not money: sold to a fence for dirty money (selling system TBD).
+
+## Future vision (not in scope yet)
+Many property types, from small to huge, e.g.:
+- RVs converted into mobile meth labs
+- Small basements / garages
+- Massive warehouses
+- Private mansions
+
+Architecture note: a property's interior and its production state must not depend on
+being at a fixed map location, so a vehicle (RV) can host one later.
 
 ## Open questions
 - Buffer sizes per machine.
