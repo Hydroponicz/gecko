@@ -8,6 +8,9 @@ Status: **draft** (paper design, nothing implemented)
 - Transport between machines:
   1. **Early game:** the player hand-carries items between machines.
   2. **Later:** the player hires criminals to work the facility (automation → passive income).
+     Workers use the **assigned routes** model: each worker is given a route
+     ("take from machine A, put into machine B") and physically walks it, acting as a living conveyor.
+     Layout and walking distance therefore matter.
   3. **Conveyors:** not planned unless they turn out to make sense.
 - Passive ("idle") income comes from automated facilities.
 
@@ -22,7 +25,7 @@ Status: **draft** (paper design, nothing implemented)
 | Machine        | Input            | Output              | Time  | Notes |
 |----------------|------------------|---------------------|-------|-------|
 | Printing Press | 1 Paper + 1 Ink  | 1 Wet Sheet         | 10s   | |
-| Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Holds several sheets at once, each dries on its own timer |
+| Drying Rack    | 1 Wet Sheet      | 1 Dry Sheet         | 30s   | Holds 6 sheets at once (placeholder), each dries on its own timer — a capacity puzzle, not a speed one |
 | Cutter         | 1 Dry Sheet      | 4 Loose Bills       | 5s    | |
 | Packing Table  | 10 Loose Bills   | 1 Counterfeit Brick | 8s    | |
 
@@ -34,7 +37,6 @@ All numbers are placeholders to be tuned in play.
 - Counterfeit Bricks are product, not money: sold to a fence for dirty money (selling system TBD).
 
 ## Open questions
-- Drying rack capacity (how many sheets at once).
 - Buffer sizes per machine.
-- How hired workers are assigned (see discussion).
+- Worker details: carry capacity, waiting behavior, wages, hiring.
 - Offline progress: does production continue while the game is closed?
