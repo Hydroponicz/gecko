@@ -93,6 +93,8 @@ Nothing is saved yet: the factory resets every run.
 - [ ] Stand in a narrow gap: they wait ("Waiting for you to move") and continue when you move.
 - [ ] Build mode: place a machine on a worker -> they pop out to a free spot and carry on.
 - [ ] Wall a machine in completely -> "Can't reach the ..." until you open a path.
+- [ ] Build machines all around a worker (not on them) -> they pop out to the open area within ~1s.
+- [ ] Stand in the only gap for 2+ minutes -> the waiting worker is moved to a safe spot.
 - [ ] Machines can't be placed in the doorway.
 
 **Wages**

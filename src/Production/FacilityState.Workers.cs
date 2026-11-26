@@ -212,6 +212,13 @@ public sealed partial class FacilityState
                 continue;
             }
 
+            // Universal fail-safe: no meaningful progress for 2 minutes.
+            if (worker.Watchdog.Tick(delta))
+            {
+                Teleport(worker, "no progress for 2 minutes");
+                continue;
+            }
+
             switch (worker.Phase)
             {
                 case WorkerPhase.Idle:
@@ -247,6 +254,18 @@ public sealed partial class FacilityState
     private void ChooseTask(WorkerState worker, float delta)
     {
         worker.ActionProgress = 0f;
+
+        // Boxed in by machines (not on top of them, but no way out): move to the safe area.
+        worker.TrapCheckTimer -= delta;
+        if (worker.TrapCheckTimer <= 0f)
+        {
+            worker.TrapCheckTimer = 1f;
+            if (!SafeArea().Contains(worker.Cell))
+            {
+                Teleport(worker, "boxed in");
+                return;
+            }
+        }
         if (worker.RetryTimer > 0f)
         {
             worker.RetryTimer -= delta;
@@ -295,6 +314,7 @@ public sealed partial class FacilityState
         if (bestScore <= 0f)
         {
             worker.Status = jobs.Count == 0 ? "No jobs for me" : "Nothing to move right now";
+            worker.Watchdog.Progress(); // legitimately idle, not stuck
             return;
         }
         BeginMove(worker, WorkerPhase.ToSource, worker.Source);
@@ -321,6 +341,7 @@ public sealed partial class FacilityState
     private void BeginMove(WorkerState worker, WorkerPhase phase, Endpoint target)
     {
         worker.Phase = phase;
+        worker.BestDistanceToGoal = int.MaxValue;
         worker.Path.Clear();
         worker.NoProgressTimer = 0f;
         worker.BlockedTimer = 0f;
@@ -332,9 +353,16 @@ public sealed partial class FacilityState
         var path = PlanPath(worker, AccessCells(target), hardBlockAgents: false);
         if (path == null)
         {
+            if (!SafeArea().Contains(worker.Cell))
+            {
+                Teleport(worker, "boxed in"); // the worker is trapped, not the target
+                return;
+            }
+            // The target is walled in; the worker is fine. Keep retrying until the layout changes.
             worker.Phase = WorkerPhase.Idle;
             worker.Status = $"Can't reach the {target.Name}";
             worker.RetryTimer = RetryAfterUnreachable;
+            worker.Watchdog.Progress();
             return;
         }
         worker.Path = path;
@@ -361,6 +389,7 @@ public sealed partial class FacilityState
         if (worker.ActionTimer < ActionSeconds)
             return;
         worker.ActionProgress = 0f;
+        worker.Watchdog.Progress();
 
         if (worker.Phase == WorkerPhase.Taking)
         {
@@ -388,6 +417,7 @@ public sealed partial class FacilityState
     private void TickWaiting(WorkerState worker, float delta)
     {
         worker.WaitTimer += delta;
+        worker.Watchdog.Progress(); // waiting at a full machine is normal (and gives up after 15s)
         if (Room(worker.Dest, worker.TaskType) > 0)
         {
             StartAction(worker, WorkerPhase.Giving);
@@ -431,19 +461,46 @@ public sealed partial class FacilityState
             worker.Status = $"Reset: {reason}";
     }
 
-    /// <summary>Last-resort fail-safe: jump to the nearest free, safe cell and restart the task.</summary>
+    /// <summary>
+    /// Last-resort fail-safe: jump to the nearest free cell in the safe area (connected to the door,
+    /// so it can reach the rest of the building) and restart the task. Keeps carried items.
+    /// </summary>
     private void Teleport(WorkerState worker, string reason)
     {
         var occupied = AgentCells(worker);
-        // Somewhere other than where they got stuck, free of machines and people.
+        var safeArea = SafeArea();
         var safe = GridPath.Nearest(worker.Cell, Size,
-            c => c != worker.Cell && IsWalkable(c) && !occupied.ContainsKey(c)) ?? DoorCell;
+            c => c != worker.Cell && safeArea.Contains(c) && !occupied.ContainsKey(c)) ?? DoorCell;
         worker.Position = CellCenter(safe);
         worker.Teleports++;
+        worker.Watchdog.Progress();
+        worker.NoProgressTimer = 0f;
+        worker.BestDistanceToGoal = int.MaxValue;
         bool leaving = worker.Phase == WorkerPhase.Leaving;
         ResetTask(worker, $"got stuck ({reason})");
         if (leaving)
             worker.Phase = WorkerPhase.Leaving;
+    }
+
+    /// <summary>
+    /// The pathfinding-safe area: every walkable cell connected to the doorway.
+    /// Anyone outside it is boxed in and gets moved back into it.
+    /// </summary>
+    public HashSet<Vector2I> SafeArea()
+    {
+        var area = new HashSet<Vector2I> { DoorCell };
+        var queue = new Queue<Vector2I>();
+        queue.Enqueue(DoorCell);
+        while (queue.Count > 0)
+        {
+            var cell = queue.Dequeue();
+            foreach (var next in GridPath.Neighbors(cell))
+            {
+                if (IsWalkable(next) && area.Add(next))
+                    queue.Enqueue(next);
+            }
+        }
+        return area;
     }
 
     /// <summary>Cells taken by other people: their current cell and the next cell they're stepping into.
@@ -553,6 +610,21 @@ public sealed partial class FacilityState
             worker.Position = target;
             worker.Path.RemoveAt(0);
             worker.NoProgressTimer = 0f;
+            // Only getting closer to the goal counts (stepping aside back and forth doesn't).
+            if (worker.Path.Count > 0)
+            {
+                var goal = worker.Path[^1];
+                int distance = Math.Abs(goal.X - next.X) + Math.Abs(goal.Y - next.Y);
+                if (distance < worker.BestDistanceToGoal)
+                {
+                    worker.BestDistanceToGoal = distance;
+                    worker.Watchdog.Progress();
+                }
+            }
+            else
+            {
+                worker.Watchdog.Progress(); // arrived
+            }
             if (!IsWalkable(next))
             {
                 // Layout changed under the path: plan again.

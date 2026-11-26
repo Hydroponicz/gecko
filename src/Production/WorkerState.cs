@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Gecko.AI;
 using Godot;
 
 namespace Gecko.Production;
@@ -68,4 +69,7 @@ public sealed class WorkerState(int id, Vector2 position, float arriveDelay)
     internal float RetryTimer;     // back-off after "can't reach"
     internal float WaitTimer;      // waiting at a full destination
     internal float ActionTimer;
+    internal float TrapCheckTimer;
+    internal int BestDistanceToGoal = int.MaxValue; // only getting closer counts as progress
+    internal readonly StuckWatchdog Watchdog = new();
 }

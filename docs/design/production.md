@@ -64,7 +64,9 @@ Workers path on the building grid (A*), avoid each other and the player, and res
 4. Inside a machine (placed on them): teleport out immediately.
 5. Destination unreachable: status "Can't reach X", retry every 3s.
 6. Destination full for 15s: take the items back to the Stash.
-7. Blocked by the player: wait politely ("Waiting for you to move"); not counted as stuck.
+7. Blocked by the player: wait politely ("Waiting for you to move"); not counted as quickly stuck.
+8. Boxed in by machines (around, not on top): teleport into the area connected to the door.
+9. Universal: no progress toward the goal for 2 minutes -> teleport to safety (see npc.md).
 The doorway is kept clear (no machines) so workers can always get in and out.
 
 ## Chain 1: Counterfeit Cash
