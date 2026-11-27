@@ -7,7 +7,7 @@ One testable slice at a time. Each slice is built on `preview`, tested, then mer
    Also the first on-screen **button prompts** (keyboard / Xbox / PlayStation glyphs).
    Also: **debug menu** (F1 / R3) for testing: give items, refill Stash, game speed, fast-forward.
 3. ✅ **Money & supplies** — wallet + bank, physical cash (cash table, duffel bags), pay phones + landlines, supply deliveries.
-4. ⏳ **Workers** (built, awaiting test) — automatic job split, cap by jobs + building size, game clock, daily wages, pathfinding with fail-safes.
+4. ✅ **Workers** — automatic job split, cap by jobs + building size, game clock, daily wages, pathfinding with fail-safes.
 5. **Vehicles & delivery** — gray-box street, drivable car, buyer.
 6. **Robberies & street dealing** — starting-money sources.
 7. **Police & heat**
