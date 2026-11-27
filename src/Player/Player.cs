@@ -71,14 +71,14 @@ public partial class Player : CharacterBody3D
     /// <summary>The vehicle being driven, or null on foot.</summary>
     public VehicleNode? Vehicle { get; private set; }
 
-    public void EnterVehicle(VehicleNode vehicle)
+    public void EnterVehicle(VehicleNode vehicle, bool viaPassengerSide = false)
     {
         Vehicle = vehicle;
         Velocity = Vector3.Zero;
         Visible = false;
         _collision.Disabled = true;
         LookAtTarget = null;
-        vehicle.SetDriver(this);
+        vehicle.SetDriver(this, viaPassengerSide);
     }
 
     public void ExitVehicle()
@@ -107,20 +107,24 @@ public partial class Player : CharacterBody3D
             vehicle.GlobalTransform * new Vector3(0f, 0f, -3.2f),
             vehicle.GlobalTransform * new Vector3(0f, 0f, 3.2f),
         ];
-        var space = GetWorld3D().DirectSpaceState;
+        foreach (var spot in candidates)
+        {
+            if (IsSpotClear(vehicle, spot))
+                return new Vector3(spot.X, vehicle.GlobalPosition.Y + 0.1f, spot.Z);
+        }
+        return vehicle.GlobalPosition + Vector3.Up * 2.2f; // last resort: on the roof
+    }
+
+    /// <summary>True if a person could stand at this spot beside the vehicle (nothing solid in the way).</summary>
+    public bool IsSpotClear(VehicleNode vehicle, Vector3 spot)
+    {
         var query = new PhysicsShapeQueryParameters3D
         {
             Shape = _collision.Shape,
             Exclude = [vehicle.GetRid(), GetRid()],
+            Transform = new Transform3D(Basis.Identity, new Vector3(spot.X, vehicle.GlobalPosition.Y + 1.05f, spot.Z)),
         };
-        foreach (var spot in candidates)
-        {
-            var position = new Vector3(spot.X, vehicle.GlobalPosition.Y + 0.1f, spot.Z);
-            query.Transform = new Transform3D(Basis.Identity, position + Vector3.Up * 0.95f);
-            if (space.IntersectShape(query, 1).Count == 0)
-                return position;
-        }
-        return vehicle.GlobalPosition + Vector3.Up * 2.2f; // last resort: on the roof
+        return GetWorld3D().DirectSpaceState.IntersectShape(query, 1).Count == 0;
     }
 
     /// <summary>Turns the body toward a world position (used while performing an action).</summary>

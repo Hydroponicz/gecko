@@ -8,7 +8,9 @@ Status: **5a built (awaiting test)**, 5b agreed in principle.
 - Cars never right themselves. A flipped car can't be driven: crawl out (Triangle / Y / F), then target it
   and choose "Push it back over" (walk to its side, ~2s shove, a real physics push).
 - Getting in: Triangle / Y / F finds the nearest free car within ~6 m; your character walks to the
-  driver's door and gets in (moving the stick cancels). Behind a car, the same button opens/closes the trunk.
+  driver's door and gets in (moving the stick cancels), walking around the front or back if you're on
+  the other side. If the driver's door is blocked (or you get stuck on the way), you get in through the
+  passenger door and slide across (~1s, can't drive until seated). Behind a car, the same button opens/closes the trunk.
 - Engine force is per driven wheel (Godot applies it to each wheel): 1,500 per wheel x 4.
 - Temporary speedometer (km/h) on screen while driving, for tuning.
 - Controls: get in/out Triangle/Y/F; gas R2/W; brake/reverse L2/S; steer left stick/A-D;

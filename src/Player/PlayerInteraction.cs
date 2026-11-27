@@ -143,7 +143,10 @@ public partial class PlayerInteraction : Node
         if (_walkingToCar != null)
         {
             UpdateWalkToCar((float)delta);
-            GameHud.Instance.SetPrompt($"Getting in the {_walkingToCar?.DisplayName}...");
+            if (_walkingToCar != null)
+                GameHud.Instance.SetPrompt(_usingPassengerDoor
+                    ? $"Getting in the {_walkingToCar.DisplayName} (passenger side)..."
+                    : $"Getting in the {_walkingToCar.DisplayName}...");
             return;
         }
 
@@ -184,44 +187,108 @@ public partial class PlayerInteraction : Node
         }
         else if (NearbyVehicle() is { } vehicle)
         {
-            // GTA-style: walk to the driver's door yourself, then get in.
-            _walkingToCar = vehicle;
-            _walkToCarTimer = 0f;
-            _player.IsLocked = true;
+            // GTA-style: walk to the driver's door yourself (around the car if needed), then get in.
+            // If the driver's door is blocked, use the passenger door and slide across.
+            StartWalkToCar(vehicle);
         }
     }
 
     private VehicleNode? _walkingToCar;
     private float _walkToCarTimer;
+    private bool _usingPassengerDoor;
+    private readonly List<Vector3> _carWaypoints = []; // in the car's local space, so they follow it
+    private float _stuckTimer;
+    private Vector3 _lastWalkPosition;
     private const float EnterVehicleRadius = 6f;
 
-    /// <summary>Walking over to get in a car. Moving the stick cancels it; arriving (or getting close) gets in.</summary>
+    private void StartWalkToCar(VehicleNode car)
+    {
+        bool driverClear = _player.IsSpotClear(car, car.DriverDoorPosition);
+        bool passengerClear = _player.IsSpotClear(car, car.PassengerDoorPosition);
+        _usingPassengerDoor = !driverClear && passengerClear;
+        _walkingToCar = car;
+        _walkToCarTimer = 0f;
+        _stuckTimer = 0f;
+        _lastWalkPosition = _player.GlobalPosition;
+        _player.IsLocked = true;
+        PlanRouteToDoor(car);
+    }
+
+    /// <summary>
+    /// Route to the chosen door in the car's own space: if you're on the other side of the car,
+    /// go round the nearer end (front or back) first instead of walking into it.
+    /// </summary>
+    private void PlanRouteToDoor(VehicleNode car)
+    {
+        _carWaypoints.Clear();
+        var door = _usingPassengerDoor ? VehicleNode.PassengerDoorLocal : VehicleNode.DriverDoorLocal;
+        var me = car.ToLocal(_player.GlobalPosition);
+        const float sideX = 1.7f;  // just outside the car's sides
+        const float endZ = 3.1f;   // just past the bumpers
+        bool sameSide = Mathf.Sign(me.X) == Mathf.Sign(door.X) && Mathf.Abs(me.X) > 1.0f;
+        if (!sameSide)
+        {
+            // Pick the front or the back, whichever is the shorter way round.
+            float endZChoice = me.Z >= 0f ? endZ : -endZ;
+            if (Mathf.Abs(me.X) > 1.0f) // standing beside the far side
+                _carWaypoints.Add(new Vector3(Mathf.Sign(me.X) * sideX, 0f, endZChoice));
+            _carWaypoints.Add(new Vector3(Mathf.Sign(door.X) * sideX, 0f, endZChoice));
+        }
+        _carWaypoints.Add(door);
+    }
+
+    /// <summary>Walking over to get in a car. Moving the stick cancels it.</summary>
     private void UpdateWalkToCar(float delta)
     {
         var car = _walkingToCar!;
         _walkToCarTimer += delta;
         var move = Input.GetVector(Actions.MoveLeft, Actions.MoveRight, Actions.MoveForward, Actions.MoveBack);
         bool cancelled = move.Length() > 0.6f && _walkToCarTimer > 0.2f;
-        if (cancelled || car.Driver != null || car.IsFlipped || !IsInstanceValid(car))
+        if (cancelled || !IsInstanceValid(car) || car.Driver != null || car.IsFlipped || _carWaypoints.Count == 0)
         {
             StopWalkToCar();
             return;
         }
-        var door = car.DriverDoorPosition;
-        _player.ScriptedMoveTarget = door;
-        var offset = door - _player.GlobalPosition;
+
+        var waypoint = car.ToGlobal(_carWaypoints[0]);
+        _player.ScriptedMoveTarget = waypoint;
+        var offset = waypoint - _player.GlobalPosition;
         offset.Y = 0f;
-        bool arrived = offset.Length() < 0.45f;
-        bool closeEnough = _walkToCarTimer > 4f && offset.Length() < 2.5f; // blocked near the door: just get in
-        if (arrived || closeEnough)
+        bool lastStop = _carWaypoints.Count == 1;
+        if (offset.Length() < (lastStop ? 0.45f : 0.6f))
         {
+            _carWaypoints.RemoveAt(0);
+            _stuckTimer = 0f;
+            if (lastStop)
+            {
+                StopWalkToCar();
+                _player.EnterVehicle(car, viaPassengerSide: _usingPassengerDoor);
+            }
+            return;
+        }
+
+        // Not getting anywhere (something in the way)?
+        _stuckTimer = _player.GlobalPosition.DistanceTo(_lastWalkPosition) < 0.02f ? _stuckTimer + delta : 0f;
+        _lastWalkPosition = _player.GlobalPosition;
+        if (_stuckTimer > 1.2f)
+        {
+            if (!_usingPassengerDoor && _player.IsSpotClear(car, car.PassengerDoorPosition))
+            {
+                _usingPassengerDoor = true; // can't reach the driver's door: go in the other side
+                _stuckTimer = 0f;
+                PlanRouteToDoor(car);
+                return;
+            }
+            // Right next to a door already? Just get in.
+            float toDriver = _player.GlobalPosition.DistanceTo(car.DriverDoorPosition);
+            float toPassenger = _player.GlobalPosition.DistanceTo(car.PassengerDoorPosition);
             StopWalkToCar();
-            _player.EnterVehicle(car);
+            if (Mathf.Min(toDriver, toPassenger) < 1.5f)
+                _player.EnterVehicle(car, viaPassengerSide: toPassenger < toDriver);
+            return;
         }
-        else if (_walkToCarTimer > 6f)
-        {
+        if (_walkToCarTimer > 8f)
             StopWalkToCar(); // couldn't get there
-        }
     }
 
     private void StopWalkToCar()
@@ -451,7 +518,8 @@ public partial class PlayerInteraction : Node
         string hint = FindTarget() != null ? Prompts.For(TargetAction, "Interact") : "";
         string build = _buildMode.CanEnter() ? Prompts.For(Actions.BuildToggle, "Build mode") : "";
         string vehicle = _player.Vehicle is { } car
-            ? car.IsFlipped ? Prompts.For(Actions.VehicleEnterExit, "Crawl out")
+            ? car.ShuffleTimeLeft > 0f ? "Sliding over to the driver's seat..."
+            : car.IsFlipped ? Prompts.For(Actions.VehicleEnterExit, "Crawl out")
             : Mathf.Abs(car.ForwardSpeed) < 3f ? Prompts.For(Actions.VehicleEnterExit, "Get out") : ""
             : NearbyTrunk() is { } trunkCar
                 ? Prompts.For(Actions.VehicleEnterExit, trunkCar.TrunkOpen ? "Close trunk" : "Open trunk")

@@ -115,6 +115,8 @@ Nothing is saved yet: the factory resets every run.
 ## Step 5a checklist: vehicles
 The sedan is parked on the avenue east of the warehouse, facing the loading bay. Debug menu: "Bring the car here".
 - [ ] Within ~6 m of the car: prompt "Get in the Sedan" (Triangle / Y / F); you walk to the driver's door and get in. Moving the stick cancels.
+- [ ] From the passenger side / in front / behind: you walk around the nearer end of the car, not into it.
+- [ ] Park with the driver's door against a wall: you get in on the passenger side and slide across (~1s).
 - [ ] Driving: R2 / W gas, L2 / S brake then reverse, left stick / A-D steer, Square / X / Space handbrake.
 - [ ] Feels arcade: responsive, less steering at speed, handbrake swings the rear out. Note anything floaty, twitchy, too slow/fast.
 - [ ] Camera: right stick / mouse looks around, swings back behind the car after a moment.

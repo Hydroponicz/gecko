@@ -66,7 +66,13 @@ public partial class VehicleNode : VehicleBody3D
     public float ForwardSpeed => LinearVelocity.Dot(GlobalBasis.Z);
 
     /// <summary>Where the driver gets out (left side, by the driver's door).</summary>
-    public Vector3 DriverDoorPosition => GlobalTransform * new Vector3(1.55f, 0f, 0.3f);
+    public Vector3 DriverDoorPosition => GlobalTransform * DriverDoorLocal;
+    public Vector3 PassengerDoorPosition => GlobalTransform * PassengerDoorLocal;
+    public static readonly Vector3 DriverDoorLocal = new(1.55f, 0f, 0.3f);
+    public static readonly Vector3 PassengerDoorLocal = new(-1.55f, 0f, 0.3f);
+
+    /// <summary>Seconds left sliding over from the passenger seat; no driving until it's done.</summary>
+    public float ShuffleTimeLeft { get; private set; }
 
     /// <summary>Behind the car, where you stand to use the trunk.</summary>
     public Vector3 TrunkPosition => GlobalTransform * new Vector3(0f, 0.9f, -2.3f);
@@ -88,9 +94,11 @@ public partial class VehicleNode : VehicleBody3D
 
     // ---- Driver ----
 
-    public void SetDriver(Node3D? driver)
+    /// <param name="viaPassengerSide">Got in through the passenger door: slide across first (GTA-style).</param>
+    public void SetDriver(Node3D? driver, bool viaPassengerSide = false)
     {
         Driver = driver;
+        ShuffleTimeLeft = driver != null && viaPassengerSide ? 1.0f : 0f;
         if (driver != null)
         {
             _cameraYaw.GlobalRotation = new Vector3(0f, GlobalRotation.Y + Mathf.Pi, 0f);
@@ -118,6 +126,12 @@ public partial class VehicleNode : VehicleBody3D
         if (IsFlipped)
         {
             EngineForce = 0f; // wheels in the air: nothing to drive
+            return;
+        }
+        if (ShuffleTimeLeft > 0f)
+        {
+            ShuffleTimeLeft -= dt; // still sliding over to the driver's seat
+            EngineForce = 0f;
             return;
         }
         float throttle = Input.GetActionStrength(Actions.VehicleAccelerate);
