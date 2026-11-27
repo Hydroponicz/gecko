@@ -119,6 +119,18 @@ public partial class DebugMenu : CanvasLayer
                     : $"Worker cap reached ({facility.State.WorkerCap} for this layout)";
             }
         }));
+        _entries.Add(new Entry(() => "Bring the car here (upright)", () =>
+        {
+            if (GetTree().GetFirstNodeInGroup(Player.Group) is not Player player
+                || GetTree().GetFirstNodeInGroup(Vehicles.VehicleNode.Group) is not Vehicles.VehicleNode car
+                || player.Vehicle != null)
+                return;
+            var spot = player.GlobalPosition + player.GlobalBasis.Z * -4f + Vector3.Up * 1f;
+            car.GlobalTransform = new Transform3D(new Basis(Vector3.Up, player.GlobalRotation.Y), spot);
+            car.LinearVelocity = Vector3.Zero;
+            car.AngularVelocity = Vector3.Zero;
+            _lastMessage = "Car moved next to you";
+        }));
         _entries.Add(new Entry(() => "Test lightbar + rumble", () =>
         {
             _colorIndex = (_colorIndex + 1) % TestColors.Length;

@@ -41,6 +41,16 @@ public static class Actions
     public static readonly StringName BuildRemove = "build_remove";
     public static readonly StringName BuildMove = "build_move";
 
+    // Vehicles
+    public static readonly StringName VehicleEnterExit = "vehicle_enter_exit";
+    public static readonly StringName VehicleAccelerate = "vehicle_accelerate";
+    public static readonly StringName VehicleBrake = "vehicle_brake";
+    public static readonly StringName VehicleSteerLeft = "vehicle_steer_left";
+    public static readonly StringName VehicleSteerRight = "vehicle_steer_right";
+    public static readonly StringName VehicleHandbrake = "vehicle_handbrake";
+    /// <summary>Targeting from inside a vehicle (L2 is the brake there).</summary>
+    public static readonly StringName VehicleTarget = "vehicle_target";
+
     public static readonly StringName DebugMenu = "debug_menu";
     public static readonly StringName MenuUp = "menu_up";
     public static readonly StringName MenuDown = "menu_down";

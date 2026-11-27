@@ -93,6 +93,18 @@ public sealed class CarryState
         return (maxBags - Count) * Money.BagCapacity + _bags.Sum(b => Money.BagCapacity - b);
     }
 
+    /// <summary>Picks up one whole duffel bag (e.g. from a trunk). False if hands are busy or 3 bags already.</summary>
+    public bool AddBag(int cash)
+    {
+        if ((!IsEmpty && Type != ItemType.DuffelBag) || Count >= Items.Get(ItemType.DuffelBag).MaxCarry)
+            return false;
+        _bags.Add(cash);
+        Type = ItemType.DuffelBag;
+        Count++;
+        Changed?.Invoke();
+        return true;
+    }
+
     /// <summary>Puts down one duffel bag. Returns the cash that was in it.</summary>
     public int TakeBag()
     {

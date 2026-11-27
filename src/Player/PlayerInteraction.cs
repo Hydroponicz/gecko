@@ -3,6 +3,7 @@ using Gecko.Core;
 using Gecko.Economy;
 using Gecko.Production;
 using Gecko.UI;
+using Gecko.Vehicles;
 using Gecko.World;
 using Godot;
 
@@ -148,15 +149,59 @@ public partial class PlayerInteraction : Node
 
         UpdateTarget();
         // RDR2-style: the camera locks onto (and follows) whatever you're targeting.
-        _player.LookAtTarget = _target?.InteractPosition;
+        var lookAt = _target?.InteractPosition;
+        if (_player.Vehicle is { } car)
+            car.LookAtTarget = lookAt;
+        else
+            _player.LookAtTarget = lookAt;
         if (_target != null)
             HandleOptions((float)delta);
+        else
+            HandleVehicleEnterExit();
         UpdateHud();
     }
 
+    /// <summary>Triangle / F: get into a nearby car, or out of the one you're driving.</summary>
+    private void HandleVehicleEnterExit()
+    {
+        if (!Input.IsActionJustPressed(Actions.VehicleEnterExit))
+            return;
+        if (_player.Vehicle is { } car)
+        {
+            if (Mathf.Abs(car.ForwardSpeed) < 3f)
+                _player.ExitVehicle();
+        }
+        else if (NearbyVehicle() is { } vehicle)
+        {
+            _player.EnterVehicle(vehicle);
+        }
+    }
+
+    /// <summary>A parked car whose driver's door is within reach.</summary>
+    private VehicleNode? NearbyVehicle()
+    {
+        VehicleNode? best = null;
+        float bestDistance = 2.2f;
+        foreach (var node in GetTree().GetNodesInGroup(VehicleNode.Group))
+        {
+            if (node is not VehicleNode { Driver: null } vehicle)
+                continue;
+            float distance = vehicle.DriverDoorPosition.DistanceTo(_player.GlobalPosition);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = vehicle;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>On foot you target with L2 / LT; in a vehicle L2 is the brake, so it's D-pad up.</summary>
+    private StringName TargetAction => _player.Vehicle != null ? Actions.VehicleTarget : Actions.Target;
+
     private void UpdateTarget()
     {
-        if (!Input.IsActionPressed(Actions.Target))
+        if (!Input.IsActionPressed(TargetAction))
         {
             SetTarget(null);
             return;
@@ -333,9 +378,12 @@ public partial class PlayerInteraction : Node
         }
 
         GameHud.Instance.SetMenu(null);
-        string hint = FindTarget() != null ? Prompts.For(Actions.Target, "Interact") : "";
+        string hint = FindTarget() != null ? Prompts.For(TargetAction, "Interact") : "";
         string build = _buildMode.CanEnter() ? Prompts.For(Actions.BuildToggle, "Build mode") : "";
-        GameHud.Instance.SetPrompt(string.Join("\n", new[] { carrying, hint, build }).Trim('\n'));
+        string vehicle = _player.Vehicle is { } car
+            ? (Mathf.Abs(car.ForwardSpeed) < 3f ? Prompts.For(Actions.VehicleEnterExit, "Get out") : "")
+            : NearbyVehicle() is { } parked ? Prompts.For(Actions.VehicleEnterExit, $"Get in the {parked.DisplayName}") : "";
+        GameHud.Instance.SetPrompt(string.Join("\n", new[] { carrying, hint, vehicle, build }).Trim('\n'));
     }
 
     /// <summary>
@@ -373,8 +421,12 @@ public partial class PlayerInteraction : Node
 
         void Consider(IInteractable candidate)
         {
+            // From a vehicle you can only deal with people (no walking over to things), with a bit more reach.
+            bool inVehicle = _player.Vehicle != null;
+            if (inVehicle && candidate.RequiresApproach)
+                return;
             float distance = DistanceTo(candidate);
-            if (distance <= MaxReach && distance < bestDistance)
+            if (distance <= (inVehicle ? MaxReach + 2.5f : MaxReach) && distance < bestDistance)
             {
                 bestDistance = distance;
                 best = candidate;

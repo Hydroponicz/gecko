@@ -1,6 +1,7 @@
 using Gecko.Core;
 using Gecko.Economy;
 using Gecko.UI;
+using Gecko.Vehicles;
 using Godot;
 
 namespace Gecko.Actors;
@@ -40,6 +41,8 @@ public partial class Player : CharacterBody3D
     private SpringArm3D _springArm = null!;
     private BuildMode _buildMode = null!;
     private PlayerInteraction _interaction = null!;
+    private CollisionShape3D _collision = null!;
+    private Camera3D _camera = null!;
 
     private float _gravity;
     private bool _sprintToggled;
@@ -65,6 +68,61 @@ public partial class Player : CharacterBody3D
     [Export] public float LockOnMinPitchDegrees { get; set; } = -35f;
     [Export] public float LockOnMaxPitchDegrees { get; set; } = 15f;
 
+    /// <summary>The vehicle being driven, or null on foot.</summary>
+    public VehicleNode? Vehicle { get; private set; }
+
+    public void EnterVehicle(VehicleNode vehicle)
+    {
+        Vehicle = vehicle;
+        Velocity = Vector3.Zero;
+        Visible = false;
+        _collision.Disabled = true;
+        LookAtTarget = null;
+        vehicle.SetDriver(this);
+    }
+
+    public void ExitVehicle()
+    {
+        if (Vehicle is not { } vehicle)
+            return;
+        Vehicle = null;
+        vehicle.LookAtTarget = null;
+        vehicle.SetDriver(null);
+        GlobalPosition = FindExitSpot(vehicle);
+        Velocity = Vector3.Zero;
+        Visible = true;
+        _collision.Disabled = false;
+        // Keep looking the way the car camera was.
+        _yaw.Rotation = _yaw.Rotation with { Y = vehicle.GlobalRotation.Y + Mathf.Pi };
+        _camera.MakeCurrent();
+    }
+
+    /// <summary>Driver's door if it's clear, else the other side, else behind the car.</summary>
+    private Vector3 FindExitSpot(VehicleNode vehicle)
+    {
+        Vector3[] candidates =
+        [
+            vehicle.DriverDoorPosition,
+            vehicle.GlobalTransform * new Vector3(-1.55f, 0f, 0.3f),
+            vehicle.GlobalTransform * new Vector3(0f, 0f, -3.2f),
+            vehicle.GlobalTransform * new Vector3(0f, 0f, 3.2f),
+        ];
+        var space = GetWorld3D().DirectSpaceState;
+        var query = new PhysicsShapeQueryParameters3D
+        {
+            Shape = _collision.Shape,
+            Exclude = [vehicle.GetRid(), GetRid()],
+        };
+        foreach (var spot in candidates)
+        {
+            var position = new Vector3(spot.X, vehicle.GlobalPosition.Y + 0.1f, spot.Z);
+            query.Transform = new Transform3D(Basis.Identity, position + Vector3.Up * 0.95f);
+            if (space.IntersectShape(query, 1).Count == 0)
+                return position;
+        }
+        return vehicle.GlobalPosition + Vector3.Up * 2.2f; // last resort: on the roof
+    }
+
     /// <summary>Turns the body toward a world position (used while performing an action).</summary>
     public void FaceTowards(Vector3 worldPosition, float delta)
     {
@@ -87,6 +145,8 @@ public partial class Player : CharacterBody3D
         _springArm = GetNode<SpringArm3D>("CameraYaw/CameraPitch/SpringArm3D");
         _buildMode = GetNode<BuildMode>("BuildMode");
         _interaction = GetNode<PlayerInteraction>("PlayerInteraction");
+        _collision = GetNode<CollisionShape3D>("CollisionShape3D");
+        _camera = GetNode<Camera3D>("CameraYaw/CameraPitch/SpringArm3D/Camera3D");
 
         AddToGroup(Group);
         _gravity = (float)ProjectSettings.GetSetting("physics/3d/default_gravity");
@@ -116,6 +176,13 @@ public partial class Player : CharacterBody3D
     public override void _PhysicsProcess(double delta)
     {
         float dt = (float)delta;
+
+        // Riding along: the vehicle does the driving.
+        if (Vehicle != null)
+        {
+            GlobalPosition = Vehicle.GlobalPosition;
+            return;
+        }
 
         // Right-stick camera
         if (LookAtTarget is { } lookAt)

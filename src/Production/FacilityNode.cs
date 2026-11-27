@@ -21,6 +21,14 @@ public partial class FacilityNode : Node3D
     [Export] public Vector2I SizeCells { get; set; } = new(14, 10);
     [Export] public string DisplayName { get; set; } = "Counterfeit Factory";
 
+    /// <summary>Drive-in loading bay through the right-hand wall (warehouses).</summary>
+    [Export] public bool HasLoadingBay { get; set; } = true;
+
+    private const int BayDepth = 6;  // cells into the building (a sedan is 4.5 m)
+    private const int BayWidth = 4;  // opening width in cells
+    private const int BayStartY = 3; // where the opening starts along the right wall
+    private Rect2I? _bay;
+
     private readonly Dictionary<MachineState, MachineView> _views = new();
     private readonly List<StashSlotView> _stashViews = [];
     private CashSpotView _cashSpot = null!;
@@ -45,6 +53,11 @@ public partial class FacilityNode : Node3D
         var stashArea = new Rect2I(Mathf.Max(0, doorStart - stashWidth), SizeCells.Y - 1, stashWidth, 1);
         var doorArea = new Rect2I(doorStart, SizeCells.Y - 1, DoorWidth, 1);
         State = new FacilityState(SizeCells, stashArea, StashSlots, doorArea);
+        if (HasLoadingBay)
+        {
+            _bay = new Rect2I(SizeCells.X - BayDepth, BayStartY, BayDepth, BayWidth);
+            State.LoadingBay = _bay;
+        }
 
         // Test supplies until buying supplies exists (roadmap step 3).
         State.Stash.Add(ItemType.Paper, 30);
@@ -52,6 +65,8 @@ public partial class FacilityNode : Node3D
 
         BuildFloor();
         BuildWalls(doorStart);
+        if (_bay is { } bay)
+            BuildBayMarkings(bay);
         BuildGrid();
         BuildStash(stashArea);
 
@@ -99,7 +114,31 @@ public partial class FacilityNode : Node3D
         if (GetTree().GetFirstNodeInGroup(Actors.Player.Group) is Node3D player && ContainsPoint(player.GlobalPosition))
             playerPosition = WorldToGrid(player.GlobalPosition);
         State.SetPlayerPosition(playerPosition);
+        State.SetVehicleCells(VehicleCells());
         State.Tick((float)delta);
+    }
+
+    /// <summary>Grid cells covered by any vehicle inside the building (with a small margin).</summary>
+    private HashSet<Vector2I> VehicleCells()
+    {
+        var cells = new HashSet<Vector2I>();
+        foreach (var node in GetTree().GetNodesInGroup(Vehicles.VehicleNode.Group))
+        {
+            if (node is not Vehicles.VehicleNode vehicle || !ContainsPoint(vehicle.GlobalPosition))
+                continue;
+            var center = WorldToGrid(vehicle.GlobalPosition);
+            for (int x = Mathf.FloorToInt(center.X - 3f); x <= Mathf.CeilToInt(center.X + 3f); x++)
+            {
+                for (int y = Mathf.FloorToInt(center.Y - 3f); y <= Mathf.CeilToInt(center.Y + 3f); y++)
+                {
+                    var world = ToGlobal(new Vector3((x + 0.5f) * CellSize, 0f, (y + 0.5f) * CellSize));
+                    var local = vehicle.ToLocal(world);
+                    if (Mathf.Abs(local.X) <= 1.2f && Mathf.Abs(local.Z) <= 2.55f)
+                        cells.Add(new Vector2I(x, y));
+                }
+            }
+        }
+        return cells;
     }
 
     public bool ContainsPoint(Vector3 worldPosition)
@@ -192,7 +231,21 @@ public partial class FacilityNode : Node3D
 
         AddWall(new Vector3(width / 2f, 0f, -t / 2f), new Vector3(width + 2f * t, WallHeight, t)); // back
         AddWall(new Vector3(-t / 2f, 0f, depth / 2f), new Vector3(t, WallHeight, depth)); // left
-        AddWall(new Vector3(width + t / 2f, 0f, depth / 2f), new Vector3(t, WallHeight, depth)); // right
+        if (_bay is { } bay)
+        {
+            // Right wall with a roll-up loading bay opening (lintel above).
+            float open0 = bay.Position.Y * CellSize;
+            float open1 = bay.End.Y * CellSize;
+            AddWall(new Vector3(width + t / 2f, 0f, open0 / 2f), new Vector3(t, WallHeight, open0));
+            AddWall(new Vector3(width + t / 2f, 0f, (open1 + depth) / 2f), new Vector3(t, WallHeight, depth - open1));
+            const float clearance = 2.6f;
+            AddWall(new Vector3(width + t / 2f, clearance, (open0 + open1) / 2f),
+                new Vector3(t, WallHeight - clearance, open1 - open0));
+        }
+        else
+        {
+            AddWall(new Vector3(width + t / 2f, 0f, depth / 2f), new Vector3(t, WallHeight, depth)); // right
+        }
 
         // Front wall with a door gap.
         float doorLeft = doorStart * CellSize;
@@ -200,6 +253,33 @@ public partial class FacilityNode : Node3D
         AddWall(new Vector3((doorLeft - t) / 2f, 0f, depth + t / 2f), new Vector3(doorLeft + t, WallHeight, t));
         float rightLength = width - doorRight + t;
         AddWall(new Vector3(doorRight + rightLength / 2f, 0f, depth + t / 2f), new Vector3(rightLength, WallHeight, t));
+    }
+
+    /// <summary>Yellow outline and label on the floor so the bay reads as "keep clear, cars park here".</summary>
+    private void BuildBayMarkings(Rect2I bay)
+    {
+        var paint = new StandardMaterial3D
+        {
+            AlbedoColor = new Color(0.95f, 0.8f, 0.1f),
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+        };
+        float x0 = bay.Position.X * CellSize, x1 = bay.End.X * CellSize;
+        float z0 = bay.Position.Y * CellSize, z1 = bay.End.Y * CellSize;
+        const float line = 0.12f;
+        void Line(Vector3 center, Vector3 size) =>
+            AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = paint, Position = center });
+        Line(new Vector3((x0 + x1) / 2f, 0.02f, z0 + line / 2f), new Vector3(x1 - x0, 0.01f, line));
+        Line(new Vector3((x0 + x1) / 2f, 0.02f, z1 - line / 2f), new Vector3(x1 - x0, 0.01f, line));
+        Line(new Vector3(x0 + line / 2f, 0.02f, (z0 + z1) / 2f), new Vector3(line, 0.01f, z1 - z0));
+        AddChild(new Label3D
+        {
+            Text = "LOADING BAY",
+            FontSize = 64,
+            PixelSize = 0.01f,
+            Modulate = new Color(0.95f, 0.8f, 0.1f),
+            Rotation = new Vector3(-Mathf.Pi / 2f, Mathf.Pi / 2f, 0f), // flat on the floor, readable from inside
+            Position = new Vector3((x0 + x1) / 2f, 0.03f, (z0 + z1) / 2f),
+        });
     }
 
     private void AddWall(Vector3 basePosition, Vector3 size)

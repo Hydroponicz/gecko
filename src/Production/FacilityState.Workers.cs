@@ -168,7 +168,12 @@ public sealed partial class FacilityState
 
     public bool IsWalkable(Vector2I cell) =>
         cell.X >= 0 && cell.Y >= 0 && cell.X < Size.X && cell.Y < Size.Y
-        && !StashArea.HasPoint(cell) && MachineAt(cell) == null;
+        && !StashArea.HasPoint(cell) && MachineAt(cell) == null && !_vehicleCells.Contains(cell);
+
+    private HashSet<Vector2I> _vehicleCells = [];
+
+    /// <summary>Cells covered by parked/moving vehicles inside the building (workers walk around them).</summary>
+    public void SetVehicleCells(HashSet<Vector2I> cells) => _vehicleCells = cells;
 
     public static Vector2 CellCenter(Vector2I cell) => new(cell.X + 0.5f, cell.Y + 0.5f);
 
@@ -420,6 +425,12 @@ public sealed partial class FacilityState
         cells.UnionWith(AccessCells(Endpoint.Stash));
         foreach (var machine in _machines)
             cells.UnionWith(AccessCells(new Endpoint(machine)));
+        if (LoadingBay is { } bay)
+        {
+            for (int x = bay.Position.X; x < bay.End.X; x++)
+                for (int y = bay.Position.Y; y < bay.End.Y; y++)
+                    cells.Add(new Vector2I(x, y)); // nobody hangs around where cars park
+        }
         return cells;
     }
 

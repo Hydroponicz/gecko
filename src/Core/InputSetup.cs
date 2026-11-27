@@ -48,6 +48,15 @@ public partial class InputSetup : Node
         Bind(Actions.BuildRemove, KeyEvent(Key.X), ButtonEvent(JoyButton.B)); // Circle
         Bind(Actions.BuildMove, KeyEvent(Key.E), ButtonEvent(JoyButton.X)); // Square
 
+        // Vehicles
+        Bind(Actions.VehicleEnterExit, KeyEvent(Key.F), ButtonEvent(JoyButton.Y)); // Triangle
+        Bind(Actions.VehicleAccelerate, KeyEvent(Key.W), AxisEvent(JoyAxis.TriggerRight, 1f)); // R2
+        Bind(Actions.VehicleBrake, KeyEvent(Key.S), AxisEvent(JoyAxis.TriggerLeft, 1f)); // L2
+        Bind(Actions.VehicleSteerLeft, KeyEvent(Key.A), AxisEvent(JoyAxis.LeftX, -1f));
+        Bind(Actions.VehicleSteerRight, KeyEvent(Key.D), AxisEvent(JoyAxis.LeftX, 1f));
+        Bind(Actions.VehicleHandbrake, KeyEvent(Key.Space), ButtonEvent(JoyButton.X)); // Square
+        Bind(Actions.VehicleTarget, MouseEvent(MouseButton.Right), ButtonEvent(JoyButton.DpadUp));
+
         // Debug
         Bind(Actions.DebugMenu, KeyEvent(Key.F1), ButtonEvent(JoyButton.RightStick)); // R3
 

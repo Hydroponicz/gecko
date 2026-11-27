@@ -36,6 +36,9 @@ public sealed partial class FacilityState
 
     /// <summary>Inside the doorway: kept clear so people can always get in and out.</summary>
     public Rect2I DoorArea { get; }
+
+    /// <summary>Drive-in loading bay (warehouses), kept clear of machines. Null if the property has none.</summary>
+    public Rect2I? LoadingBay { get; set; }
     public StashState Stash { get; }
     public IReadOnlyList<MachineState> Machines => _machines;
     public IReadOnlyList<Delivery> Deliveries => _deliveries;
@@ -81,6 +84,8 @@ public sealed partial class FacilityState
         if (rect.Position.X < 0 || rect.Position.Y < 0 || rect.End.X > Size.X || rect.End.Y > Size.Y)
             return false;
         if (rect.Intersects(StashArea) || rect.Intersects(DoorArea))
+            return false;
+        if (LoadingBay is { } bay && rect.Intersects(bay))
             return false;
         if (blocked is { } b && rect.Intersects(b))
             return false;
