@@ -171,10 +171,30 @@ public partial class PlayerInteraction : Node
             if (Mathf.Abs(car.ForwardSpeed) < 3f)
                 _player.ExitVehicle();
         }
+        else if (NearbyTrunk() is { } trunkCar)
+        {
+            trunkCar.SetTrunkOpen(!trunkCar.TrunkOpen); // at the back: open / close the trunk
+        }
         else if (NearbyVehicle() is { } vehicle)
         {
             _player.EnterVehicle(vehicle);
         }
+    }
+
+    /// <summary>A car whose trunk you're standing behind (and nearer to than its driver's door).</summary>
+    private VehicleNode? NearbyTrunk()
+    {
+        foreach (var node in GetTree().GetNodesInGroup(VehicleNode.Group))
+        {
+            if (node is not VehicleNode vehicle || vehicle == _player.Vehicle)
+                continue;
+            var behind = vehicle.GlobalTransform * new Vector3(0f, 0f, -2.9f);
+            var offset = behind - _player.GlobalPosition;
+            offset.Y = 0f;
+            if (offset.Length() < 1.6f && offset.Length() < vehicle.DriverDoorPosition.DistanceTo(_player.GlobalPosition))
+                return vehicle;
+        }
+        return null;
     }
 
     /// <summary>A parked car whose driver's door is within reach.</summary>
@@ -382,7 +402,9 @@ public partial class PlayerInteraction : Node
         string build = _buildMode.CanEnter() ? Prompts.For(Actions.BuildToggle, "Build mode") : "";
         string vehicle = _player.Vehicle is { } car
             ? (Mathf.Abs(car.ForwardSpeed) < 3f ? Prompts.For(Actions.VehicleEnterExit, "Get out") : "")
-            : NearbyVehicle() is { } parked ? Prompts.For(Actions.VehicleEnterExit, $"Get in the {parked.DisplayName}") : "";
+            : NearbyTrunk() is { } trunkCar
+                ? Prompts.For(Actions.VehicleEnterExit, trunkCar.TrunkOpen ? "Close trunk" : "Open trunk")
+                : NearbyVehicle() is { } parked ? Prompts.For(Actions.VehicleEnterExit, $"Get in the {parked.DisplayName}") : "";
         GameHud.Instance.SetPrompt(string.Join("\n", new[] { carrying, hint, vehicle, build }).Trim('\n'));
     }
 
@@ -423,7 +445,7 @@ public partial class PlayerInteraction : Node
         {
             // From a vehicle you can only deal with people (no walking over to things), with a bit more reach.
             bool inVehicle = _player.Vehicle != null;
-            if (inVehicle && candidate.RequiresApproach)
+            if (!candidate.IsAvailable || (inVehicle && candidate.RequiresApproach))
                 return;
             float distance = DistanceTo(candidate);
             if (distance <= (inVehicle ? MaxReach + 2.5f : MaxReach) && distance < bestDistance)

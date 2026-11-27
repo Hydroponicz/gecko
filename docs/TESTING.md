@@ -118,11 +118,12 @@ The sedan is parked on the avenue east of the warehouse, facing the loading bay.
 - [ ] Driving: R2 / W gas, L2 / S brake then reverse, left stick / A-D steer, Square / X / Space handbrake.
 - [ ] Feels arcade: responsive, less steering at speed, handbrake swings the rear out. Note anything floaty, twitchy, too slow/fast.
 - [ ] Camera: right stick / mouse looks around, swings back behind the car after a moment.
-- [ ] Flip it (ramp, crash): it rights itself after ~3s.
+- [ ] Flip it: it stays flipped (no auto-righting). Debug menu "Bring the car here" puts it back.
 - [ ] Get out (Triangle / Y / F) only when nearly stopped; you appear by the door (other side if blocked).
 - [ ] Drive into the warehouse through the side loading bay; machines can't be built on the yellow bay.
 - [ ] Workers walk around the parked car.
-- [ ] Trunk: on foot, L2 at the back of the car: Load what you carry, Take items back (tap 1, hold all).
+- [ ] Trunk: stand behind the car, Triangle / Y / F opens it (lid swings up); closed trunk can't be targeted.
+- [ ] Open trunk: L2 at the back: Load what you carry, Take items back (tap 1, hold all). Triangle again closes it.
 - [ ] Trunk holds 20 bricks, or 3 duffel bags; cargo shows on the rear deck.
 - [ ] In the car, hold D-pad up (or right mouse) near a worker: targeting menu + camera turns to them.
 - [ ] Gray-box streets and buildings around the area; nothing to fall through.

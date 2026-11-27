@@ -24,7 +24,7 @@ public partial class TrunkView : Node3D, IInteractable
 
     public Vector3 InteractPosition => _vehicle.TrunkPosition;
     public float InteractRadius => 0.9f;
-    public bool IsAvailable => IsInstanceValid(this) && _vehicle.Driver == null;
+    public bool IsAvailable => IsInstanceValid(this) && _vehicle.TrunkOpen;
     public string Title => $"{_vehicle.DisplayName} - Trunk";
     public string Status => $"Space {_vehicle.Cargo.SpaceUsed}/{_vehicle.Cargo.Capacity}"
                             + (_vehicle.Cargo.Bags.Count > 0 ? $"   Bags {Money.Format(_vehicle.Cargo.BagCash)}" : "");

@@ -41,7 +41,13 @@ public partial class VehicleNode : VehicleBody3D
     private Node3D _cameraPitch = null!;
     private Camera3D _camera = null!;
     private float _sinceManualLook = 99f;
-    private float _upsideDownTimer;
+    private Node3D _trunkLid = null!;
+    private float _lidAngle;
+
+    /// <summary>The trunk must be opened (Triangle / Y / F at the back) before it can be loaded.</summary>
+    public bool TrunkOpen { get; private set; }
+
+    public void SetTrunkOpen(bool open) => TrunkOpen = open;
 
     public CargoState Cargo { get; private set; } = null!;
 
@@ -99,7 +105,6 @@ public partial class VehicleNode : VehicleBody3D
         if (Driver != null)
             Drive(dt);
         ApplyDownforce();
-        FlipBackIfUpsideDown(dt);
     }
 
     private void Drive(float dt)
@@ -147,26 +152,18 @@ public partial class VehicleNode : VehicleBody3D
         ApplyCentralForce(-GlobalBasis.Y * speed * speed * Downforce);
     }
 
-    /// <summary>Fail-safe: a car stuck on its side or roof for 3 seconds is set back on its wheels.</summary>
-    private void FlipBackIfUpsideDown(float dt)
-    {
-        bool upsideDown = GlobalBasis.Y.Dot(Vector3.Up) < 0.3f && LinearVelocity.Length() < 2f;
-        _upsideDownTimer = upsideDown ? _upsideDownTimer + dt : 0f;
-        if (_upsideDownTimer < 3f)
-            return;
-        _upsideDownTimer = 0f;
-        var yaw = GlobalRotation.Y;
-        GlobalTransform = new Transform3D(new Basis(Vector3.Up, yaw), GlobalPosition + Vector3.Up * 1.5f);
-        LinearVelocity = Vector3.Zero;
-        AngularVelocity = Vector3.Zero;
-    }
-
     // ---- Camera ----
 
     public override void _Process(double delta)
     {
         float dt = (float)delta;
         _cameraYaw.GlobalPosition = GlobalPosition + Vector3.Up * CameraHeight;
+
+        // Trunk lid swings up/down.
+        float targetAngle = TrunkOpen ? Mathf.DegToRad(75f) : 0f;
+        _lidAngle = Mathf.MoveToward(_lidAngle, targetAngle, 4f * dt);
+        _trunkLid.Rotation = new Vector3(_lidAngle, 0f, 0f);
+
         if (Driver == null)
             return;
 
@@ -248,6 +245,16 @@ public partial class VehicleNode : VehicleBody3D
             },
             Position = new Vector3(0f, 0.85f, 2.26f),
         });
+        // Trunk lid, hinged at the back of the cabin.
+        _trunkLid = new Node3D { Position = new Vector3(0f, 1.06f, -1.25f) };
+        _trunkLid.AddChild(new MeshInstance3D
+        {
+            Mesh = new BoxMesh { Size = new Vector3(1.72f, 0.06f, 1.0f) },
+            MaterialOverride = paint,
+            Position = new Vector3(0f, 0.03f, -0.5f),
+        });
+        AddChild(_trunkLid);
+
         AddChild(new CollisionShape3D
         {
             Shape = new BoxShape3D { Size = new Vector3(1.8f, 1.1f, 4.5f) },
