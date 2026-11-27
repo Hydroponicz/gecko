@@ -19,26 +19,26 @@ public partial class VehicleNode : VehicleBody3D
 
     [ExportGroup("Handling")]
     /// <summary>Engine force per driven wheel (Godot applies it to each of the 4 wheels).
-    /// 1,900 x 4 wheels on a 1,500 kg car is roughly 0-100 km/h in about 6-7 seconds.</summary>
-    [Export] public float EnginePower { get; set; } = 1900f;
-    [Export] public float ReversePower { get; set; } = 900f;
+    /// 1,750 x 4 wheels on a 1,350 kg car is roughly 0-100 km/h in about 6 seconds.</summary>
+    [Export] public float EnginePower { get; set; } = 1750f;
+    [Export] public float ReversePower { get; set; } = 820f;
     [Export] public float BrakePower { get; set; } = 40f;
     [Export] public float HandbrakePower { get; set; } = 25f;
     [Export] public float TopSpeed { get; set; } = 32f;        // m/s (~115 km/h)
     [Export] public float TopReverseSpeed { get; set; } = 8f;  // m/s
     [Export] public float MaxSteerDegrees { get; set; } = 32f;
     [Export] public float HighSpeedSteerFactor { get; set; } = 0.35f; // less steering at top speed
-    [Export] public float SteerSpeed { get; set; } = 4f;
+    [Export] public float SteerSpeed { get; set; } = 5f;
     [Export] public float Grip { get; set; } = 5f;
     [Export] public float HandbrakeRearGrip { get; set; } = 1.6f; // rear slides out: handbrake turns
     [Export] public float Downforce { get; set; } = 3f;
 
     [ExportGroup("Suspension")]
     [Export] public float SuspensionStiffness { get; set; } = 40f;
-    [Export] public float DampingCompression { get; set; } = 2.5f;
-    [Export] public float DampingRelaxation { get; set; } = 3.2f;
+    [Export] public float DampingCompression { get; set; } = 1.7f;
+    [Export] public float DampingRelaxation { get; set; } = 2.2f;
     /// <summary>0 = rolls over easily, 1 = no body roll at all. Some roll looks good; too little tips over.</summary>
-    [Export] public float RollResistance { get; set; } = 0.75f;
+    [Export] public float RollResistance { get; set; } = 0.45f;
 
     [ExportGroup("Camera")]
     [Export] public float CameraDistance { get; set; } = 6.5f;
@@ -87,9 +87,9 @@ public partial class VehicleNode : VehicleBody3D
     public override void _Ready()
     {
         AddToGroup(Group);
-        Mass = 1500f; // heavier, more planted feel
+        Mass = 1350f; // between the too-light first version (1200) and too-heavy (1500)
         CenterOfMassMode = CenterOfMassModeEnum.Custom;
-        CenterOfMass = new Vector3(0f, 0.2f, 0f); // low: hard to roll over
+        CenterOfMass = new Vector3(0f, 0.25f, 0f); // low enough not to tip, high enough to lean
         Cargo = new CargoState(TrunkCapacity);
 
         BuildBody();
@@ -328,7 +328,7 @@ public partial class VehicleNode : VehicleBody3D
                 SuspensionTravel = 0.2f,
                 SuspensionStiffness = SuspensionStiffness,
                 SuspensionMaxForce = 20000f,
-                // Godot scales these by the car's mass; ~2.5 / 3.2 gives a firm, settled ride
+                // Godot scales these by the car's mass; ~1.7 / 2.2 settles quickly but still moves
                 // (the old 0.85 / 0.9 was only ~12% of what stops the bounce).
                 DampingCompression = DampingCompression,
                 DampingRelaxation = DampingRelaxation,
