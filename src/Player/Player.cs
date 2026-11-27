@@ -68,6 +68,9 @@ public partial class Player : CharacterBody3D
     [Export] public float LockOnMinPitchDegrees { get; set; } = -35f;
     [Export] public float LockOnMaxPitchDegrees { get; set; } = 15f;
 
+    private VehicleNode? _exitedVehicle;
+    private float _exitGraceTimer;
+
     /// <summary>The vehicle being driven, or null on foot.</summary>
     public VehicleNode? Vehicle { get; private set; }
 
@@ -91,6 +94,10 @@ public partial class Player : CharacterBody3D
         GlobalPosition = FindExitSpot(vehicle);
         Velocity = Vector3.Zero;
         Visible = true;
+        // Safety: briefly ignore collisions with the car we just left, so stepping out can never shove it.
+        AddCollisionExceptionWith(vehicle);
+        _exitedVehicle = vehicle;
+        _exitGraceTimer = 1.0f;
         _collision.Disabled = false;
         // Keep looking the way the car camera was.
         _yaw.Rotation = _yaw.Rotation with { Y = vehicle.GlobalRotation.Y + Mathf.Pi };
@@ -121,7 +128,7 @@ public partial class Player : CharacterBody3D
         var query = new PhysicsShapeQueryParameters3D
         {
             Shape = _collision.Shape,
-            Exclude = [vehicle.GetRid(), GetRid()],
+            Exclude = [GetRid()], // the car itself counts: never appear overlapping it
             Transform = new Transform3D(Basis.Identity, new Vector3(spot.X, vehicle.GlobalPosition.Y + 1.05f, spot.Z)),
         };
         return GetWorld3D().DirectSpaceState.IntersectShape(query, 1).Count == 0;
@@ -180,6 +187,18 @@ public partial class Player : CharacterBody3D
     public override void _PhysicsProcess(double delta)
     {
         float dt = (float)delta;
+
+        // Re-enable collisions with the car we got out of once we're clear of it.
+        if (_exitedVehicle != null)
+        {
+            _exitGraceTimer -= dt;
+            if (_exitGraceTimer <= 0f || !IsInstanceValid(_exitedVehicle))
+            {
+                if (IsInstanceValid(_exitedVehicle))
+                    RemoveCollisionExceptionWith(_exitedVehicle);
+                _exitedVehicle = null;
+            }
+        }
 
         // Riding along: the vehicle does the driving.
         if (Vehicle != null)

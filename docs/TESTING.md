@@ -126,6 +126,8 @@ The sedan is parked on the avenue east of the warehouse, facing the loading bay.
 - [ ] Braking/accelerating: a little dip and squat, settling quickly, no pogo bouncing.
 - [ ] Get out (Triangle / Y / F) only when nearly stopped; you appear by the door (other side if blocked).
 - [ ] Drive into the warehouse through the side loading bay; machines can't be built on the yellow bay.
+- [ ] Park in the bay and get out (also with the driver's side near a wall): the car stays put, no jolt or flip.
+- [ ] "LOADING BAY" floor text reads correctly when facing the bay door.
 - [ ] Workers walk around the parked car.
 - [ ] Trunk: stand behind the car, Triangle / Y / F opens it (lid swings up); closed trunk can't be targeted.
 - [ ] Open trunk: L2 at the back: Load what you carry, Take items back (tap 1, hold all). Triangle again closes it.

@@ -133,7 +133,8 @@ public partial class FacilityNode : Node3D
                 {
                     var world = ToGlobal(new Vector3((x + 0.5f) * CellSize, 0f, (y + 0.5f) * CellSize));
                     var local = vehicle.ToLocal(world);
-                    if (Mathf.Abs(local.X) <= 1.2f && Mathf.Abs(local.Z) <= 2.55f)
+                    // Car half-width 0.9 + worker radius 0.3 + clearance, so workers never brush the car.
+                    if (Mathf.Abs(local.X) <= 1.6f && Mathf.Abs(local.Z) <= 2.9f)
                         cells.Add(new Vector2I(x, y));
                 }
             }
@@ -277,7 +278,7 @@ public partial class FacilityNode : Node3D
             FontSize = 64,
             PixelSize = 0.01f,
             Modulate = new Color(0.95f, 0.8f, 0.1f),
-            Rotation = new Vector3(-Mathf.Pi / 2f, Mathf.Pi / 2f, 0f), // flat on the floor, readable from inside
+            Rotation = new Vector3(-Mathf.Pi / 2f, -Mathf.Pi / 2f, 0f), // flat on the floor, reads correctly facing the bay door
             Position = new Vector3((x0 + x1) / 2f, 0.03f, (z0 + z1) / 2f),
         });
     }

@@ -116,7 +116,10 @@ public partial class VehicleNode : VehicleBody3D
             EngineForce = 0f;
             Steering = 0f;
             foreach (var wheel in _wheels)
-                wheel.Brake = BrakePower * 0.5f; // parked
+            {
+                wheel.Brake = BrakePower * 2f; // parked: handbrake on, in gear
+                wheel.WheelFrictionSlip = Grip;
+            }
         }
     }
 
