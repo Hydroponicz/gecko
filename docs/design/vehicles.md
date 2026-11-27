@@ -11,7 +11,10 @@ Status: **5a built (awaiting test)**, 5b agreed in principle.
   driver's door and gets in (moving the stick cancels), walking around the front or back if you're on
   the other side. If the driver's door is blocked (or you get stuck on the way), you get in through the
   passenger door and slide across (~1s, can't drive until seated). Behind a car, the same button opens/closes the trunk.
-- Engine force is per driven wheel (Godot applies it to each wheel): 1,500 per wheel x 4.
+- Engine force is per driven wheel (Godot applies it to each wheel): 1,900 per wheel x 4, car mass 1,500 kg.
+- Stability lessons: wheel roll influence 1.0 = resists roll, 0.0 = rolls over (we use 0.75);
+  suspension damping is scaled by mass in Godot, so ~2.5 compression / 3.2 rebound for a settled ride.
+  All suspension values are exported under "Suspension" on the car for tuning.
 - Temporary speedometer (km/h) on screen while driving, for tuning.
 - Controls: get in/out Triangle/Y/F; gas R2/W; brake/reverse L2/S; steer left stick/A-D;
   handbrake Square/X/Space; camera right stick/mouse (re-centres behind the car after 1.5s).

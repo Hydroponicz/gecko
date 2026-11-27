@@ -121,7 +121,9 @@ The sedan is parked on the avenue east of the warehouse, facing the loading bay.
 - [ ] Feels arcade: responsive, less steering at speed, handbrake swings the rear out. Note anything floaty, twitchy, too slow/fast.
 - [ ] Camera: right stick / mouse looks around, swings back behind the car after a moment.
 - [ ] Flip it: it stays flipped. Triangle = "Crawl out". Target the car: "Push it back over" (walk to its side, ~2s shove).
-- [ ] Speed: the on-screen km/h should reach ~100 in about 6 s and top out around 115. Tell me if not.
+- [ ] Speed: the on-screen km/h should reach ~100 in about 6-7 s and top out around 115. Tell me if not.
+- [ ] Hard turns at 50+ km/h: the car leans and may slide, but shouldn't tip over (a big ramp/crash still can).
+- [ ] Braking/accelerating: a little dip and squat, settling quickly, no pogo bouncing.
 - [ ] Get out (Triangle / Y / F) only when nearly stopped; you appear by the door (other side if blocked).
 - [ ] Drive into the warehouse through the side loading bay; machines can't be built on the yellow bay.
 - [ ] Workers walk around the parked car.
