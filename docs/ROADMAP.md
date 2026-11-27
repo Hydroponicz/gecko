@@ -16,4 +16,8 @@ One testable slice at a time. Each slice is built on `preview`, tested, then mer
 8. **Custom DualSense layer** — adaptive triggers, touchpad, HD haptics (USB), our code owns all controller output.
 9. **Combat** — guns, melee.
 
+10. **Vehicle damage** — crash cage (hybrid soft-body deformation) + detachable parts, mechanical damage.
+    Start with a 1-2 day spike on one car. Needs vehicles modelled as separate parts (body, doors, hood,
+    trunk lid, bumpers, wheels, windows).
+
 After that: laundering, territory, crew hierarchy, more properties.

@@ -41,6 +41,10 @@ Status: **5a built (awaiting test)**, 5b agreed in principle.
 
 ## Long-term vehicle goals
 - Weighty, GTA IV-like handling (mass, body roll, weight transfer).
-- Strong damage: deformation and detachable parts, aiming toward BeamNG-like damage where feasible.
+- Strong damage, planned as a **crash cage**: driving stays rigid; a coarse soft-body cage (50-100 nodes)
+  simulates only during impacts and deforms the visible mesh; plus detachable parts and mechanical damage.
+  Full BeamNG-style node-beam for every car was judged too costly (months; few cars at once).
+- Keep car code split into driving / visuals / damage so the cage can be added later without rewrites.
+- Asset rule: cars from Meshy must come as separate parts (body, doors, hood, trunk lid, bumpers, wheels, windows).
 - Paid in dirty cash: wallet first, overflow into carried duffel bags.
 - Per-buyer daily demand limits. Heat and automated drivers/guards come after police.
