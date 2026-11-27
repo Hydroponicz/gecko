@@ -5,11 +5,16 @@ Status: **5a built (awaiting test)**, 5b agreed in principle.
 ## 5a: Vehicles
 - Arcade, GTA-like handling (Godot VehicleBody3D tuned for arcade): speed-sensitive steering,
   handbrake slides, downforce, top speed limit. All numbers exported on the car for tuning.
-- Cars never right themselves: a flipped car stays flipped (debug menu can bring it back upright for testing).
+- Cars never right themselves. A flipped car can't be driven: crawl out (Triangle / Y / F), then target it
+  and choose "Push it back over" (walk to its side, ~2s shove, a real physics push).
+- Getting in: Triangle / Y / F finds the nearest free car within ~6 m; your character walks to the
+  driver's door and gets in (moving the stick cancels). Behind a car, the same button opens/closes the trunk.
+- Engine force is per driven wheel (Godot applies it to each wheel): 1,500 per wheel x 4.
+- Temporary speedometer (km/h) on screen while driving, for tuning.
 - Controls: get in/out Triangle/Y/F; gas R2/W; brake/reverse L2/S; steer left stick/A-D;
   handbrake Square/X/Space; camera right stick/mouse (re-centres behind the car after 1.5s).
 - Starter car: a beat-up sedan parked on the avenue by the warehouse loading bay.
-- Can only get out below ~10 km/h. Exit by the driver's door, else other side, else behind.
+- Can only get out below ~10 km/h (or when flipped). Exit by the driver's door, else other side, else behind.
 
 ### Trunk (general container, weapon-ready)
 - Space-based: most items 1, duffel bag 6. Sedan: 20 space (20 bricks, or 3 bags + 2 bricks).

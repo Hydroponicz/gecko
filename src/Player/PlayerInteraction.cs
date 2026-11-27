@@ -140,6 +140,13 @@ public partial class PlayerInteraction : Node
             return;
         }
 
+        if (_walkingToCar != null)
+        {
+            UpdateWalkToCar((float)delta);
+            GameHud.Instance.SetPrompt($"Getting in the {_walkingToCar?.DisplayName}...");
+            return;
+        }
+
         if (_task != null)
         {
             _player.LookAtTarget = _task.Target.IsAvailable ? _task.Target.InteractPosition : null;
@@ -168,8 +175,8 @@ public partial class PlayerInteraction : Node
             return;
         if (_player.Vehicle is { } car)
         {
-            if (Mathf.Abs(car.ForwardSpeed) < 3f)
-                _player.ExitVehicle();
+            if (Mathf.Abs(car.ForwardSpeed) < 3f || car.IsFlipped)
+                _player.ExitVehicle(); // crawl out of a flipped car too
         }
         else if (NearbyTrunk() is { } trunkCar)
         {
@@ -177,8 +184,51 @@ public partial class PlayerInteraction : Node
         }
         else if (NearbyVehicle() is { } vehicle)
         {
-            _player.EnterVehicle(vehicle);
+            // GTA-style: walk to the driver's door yourself, then get in.
+            _walkingToCar = vehicle;
+            _walkToCarTimer = 0f;
+            _player.IsLocked = true;
         }
+    }
+
+    private VehicleNode? _walkingToCar;
+    private float _walkToCarTimer;
+    private const float EnterVehicleRadius = 6f;
+
+    /// <summary>Walking over to get in a car. Moving the stick cancels it; arriving (or getting close) gets in.</summary>
+    private void UpdateWalkToCar(float delta)
+    {
+        var car = _walkingToCar!;
+        _walkToCarTimer += delta;
+        var move = Input.GetVector(Actions.MoveLeft, Actions.MoveRight, Actions.MoveForward, Actions.MoveBack);
+        bool cancelled = move.Length() > 0.6f && _walkToCarTimer > 0.2f;
+        if (cancelled || car.Driver != null || car.IsFlipped || !IsInstanceValid(car))
+        {
+            StopWalkToCar();
+            return;
+        }
+        var door = car.DriverDoorPosition;
+        _player.ScriptedMoveTarget = door;
+        var offset = door - _player.GlobalPosition;
+        offset.Y = 0f;
+        bool arrived = offset.Length() < 0.45f;
+        bool closeEnough = _walkToCarTimer > 4f && offset.Length() < 2.5f; // blocked near the door: just get in
+        if (arrived || closeEnough)
+        {
+            StopWalkToCar();
+            _player.EnterVehicle(car);
+        }
+        else if (_walkToCarTimer > 6f)
+        {
+            StopWalkToCar(); // couldn't get there
+        }
+    }
+
+    private void StopWalkToCar()
+    {
+        _walkingToCar = null;
+        _player.ScriptedMoveTarget = null;
+        _player.IsLocked = false;
     }
 
     /// <summary>A car whose trunk you're standing behind (and nearer to than its driver's door).</summary>
@@ -197,16 +247,16 @@ public partial class PlayerInteraction : Node
         return null;
     }
 
-    /// <summary>A parked car whose driver's door is within reach.</summary>
+    /// <summary>The nearest free, upright car within a few metres (you walk to its door to get in).</summary>
     private VehicleNode? NearbyVehicle()
     {
         VehicleNode? best = null;
-        float bestDistance = 2.2f;
+        float bestDistance = EnterVehicleRadius;
         foreach (var node in GetTree().GetNodesInGroup(VehicleNode.Group))
         {
-            if (node is not VehicleNode { Driver: null } vehicle)
+            if (node is not VehicleNode { Driver: null, IsFlipped: false } vehicle)
                 continue;
-            float distance = vehicle.DriverDoorPosition.DistanceTo(_player.GlobalPosition);
+            float distance = vehicle.GlobalPosition.DistanceTo(_player.GlobalPosition);
             if (distance < bestDistance)
             {
                 bestDistance = distance;
@@ -333,7 +383,7 @@ public partial class PlayerInteraction : Node
                 task.Timer = 0f;
                 // Placeholder timing until real animations: longer when moving more items.
                 int moving = Mathf.Min(task.Amount, 5);
-                task.Duration = 0.6f + 0.15f * (moving - 1);
+                task.Duration = task.Target.ActionSeconds ?? 0.6f + 0.15f * (moving - 1);
                 _player.ScriptedMoveTarget = null;
             }
             return;
@@ -401,11 +451,14 @@ public partial class PlayerInteraction : Node
         string hint = FindTarget() != null ? Prompts.For(TargetAction, "Interact") : "";
         string build = _buildMode.CanEnter() ? Prompts.For(Actions.BuildToggle, "Build mode") : "";
         string vehicle = _player.Vehicle is { } car
-            ? (Mathf.Abs(car.ForwardSpeed) < 3f ? Prompts.For(Actions.VehicleEnterExit, "Get out") : "")
+            ? car.IsFlipped ? Prompts.For(Actions.VehicleEnterExit, "Crawl out")
+            : Mathf.Abs(car.ForwardSpeed) < 3f ? Prompts.For(Actions.VehicleEnterExit, "Get out") : ""
             : NearbyTrunk() is { } trunkCar
                 ? Prompts.For(Actions.VehicleEnterExit, trunkCar.TrunkOpen ? "Close trunk" : "Open trunk")
                 : NearbyVehicle() is { } parked ? Prompts.For(Actions.VehicleEnterExit, $"Get in the {parked.DisplayName}") : "";
-        GameHud.Instance.SetPrompt(string.Join("\n", new[] { carrying, hint, vehicle, build }).Trim('\n'));
+        // Temporary speedometer while tuning car handling.
+        string speed = _player.Vehicle is { } driving ? $"{Mathf.RoundToInt(Mathf.Abs(driving.ForwardSpeed) * 3.6f)} km/h" : "";
+        GameHud.Instance.SetPrompt(string.Join("\n", new[] { speed, carrying, hint, vehicle, build }).Trim('\n'));
     }
 
     /// <summary>

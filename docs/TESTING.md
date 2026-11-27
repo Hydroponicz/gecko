@@ -114,11 +114,12 @@ Nothing is saved yet: the factory resets every run.
 
 ## Step 5a checklist: vehicles
 The sedan is parked on the avenue east of the warehouse, facing the loading bay. Debug menu: "Bring the car here".
-- [ ] Near the driver's door (left side): prompt "Get in the Sedan" (Triangle / Y / F).
+- [ ] Within ~6 m of the car: prompt "Get in the Sedan" (Triangle / Y / F); you walk to the driver's door and get in. Moving the stick cancels.
 - [ ] Driving: R2 / W gas, L2 / S brake then reverse, left stick / A-D steer, Square / X / Space handbrake.
 - [ ] Feels arcade: responsive, less steering at speed, handbrake swings the rear out. Note anything floaty, twitchy, too slow/fast.
 - [ ] Camera: right stick / mouse looks around, swings back behind the car after a moment.
-- [ ] Flip it: it stays flipped (no auto-righting). Debug menu "Bring the car here" puts it back.
+- [ ] Flip it: it stays flipped. Triangle = "Crawl out". Target the car: "Push it back over" (walk to its side, ~2s shove).
+- [ ] Speed: the on-screen km/h should reach ~100 in about 6 s and top out around 115. Tell me if not.
 - [ ] Get out (Triangle / Y / F) only when nearly stopped; you appear by the door (other side if blocked).
 - [ ] Drive into the warehouse through the side loading bay; machines can't be built on the yellow bay.
 - [ ] Workers walk around the parked car.

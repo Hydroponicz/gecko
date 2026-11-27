@@ -38,6 +38,9 @@ public interface IInteractable
     /// </summary>
     bool RequiresApproach => true;
 
+    /// <summary>How long the action takes, if not the usual quick put-down (e.g. pushing a car over).</summary>
+    float? ActionSeconds => null;
+
     /// <summary>False once the object is gone (e.g. a machine was removed).</summary>
     bool IsAvailable { get; }
 

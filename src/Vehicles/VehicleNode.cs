@@ -18,8 +18,10 @@ public partial class VehicleNode : VehicleBody3D
     [Export] public int TrunkCapacity { get; set; } = 20;
 
     [ExportGroup("Handling")]
-    [Export] public float EnginePower { get; set; } = 160f;
-    [Export] public float ReversePower { get; set; } = 80f;
+    /// <summary>Engine force per driven wheel (Godot applies it to each of the 4 wheels).
+    /// 1,500 x 4 wheels on a 1,200 kg car is roughly 0-100 km/h in about 6 seconds.</summary>
+    [Export] public float EnginePower { get; set; } = 1500f;
+    [Export] public float ReversePower { get; set; } = 700f;
     [Export] public float BrakePower { get; set; } = 30f;
     [Export] public float HandbrakePower { get; set; } = 25f;
     [Export] public float TopSpeed { get; set; } = 32f;        // m/s (~115 km/h)
@@ -57,6 +59,9 @@ public partial class VehicleNode : VehicleBody3D
     /// <summary>When set (targeting from the car), the camera turns to frame this point and follows it.</summary>
     public Vector3? LookAtTarget { get; set; }
 
+    /// <summary>On its side or roof: can't be driven until someone pushes it back over.</summary>
+    public bool IsFlipped => GlobalBasis.Y.Dot(Vector3.Up) < 0.5f;
+
     /// <summary>Forward speed in m/s (negative when reversing).</summary>
     public float ForwardSpeed => LinearVelocity.Dot(GlobalBasis.Z);
 
@@ -78,6 +83,7 @@ public partial class VehicleNode : VehicleBody3D
         BuildWheels();
         BuildCamera();
         AddChild(new TrunkView(this));
+        AddChild(new FlippedCarView(this));
     }
 
     // ---- Driver ----
@@ -109,6 +115,11 @@ public partial class VehicleNode : VehicleBody3D
 
     private void Drive(float dt)
     {
+        if (IsFlipped)
+        {
+            EngineForce = 0f; // wheels in the air: nothing to drive
+            return;
+        }
         float throttle = Input.GetActionStrength(Actions.VehicleAccelerate);
         float brake = Input.GetActionStrength(Actions.VehicleBrake);
         float steerInput = Input.GetAxis(Actions.VehicleSteerRight, Actions.VehicleSteerLeft); // + = left
@@ -122,7 +133,7 @@ public partial class VehicleNode : VehicleBody3D
             if (speed < -1f)
                 brakeForce = BrakePower * throttle; // rolling backwards: brake first
             else if (speed < TopSpeed)
-                engine = EnginePower * throttle;
+                engine = EnginePower * throttle * (1f - 0.5f * Mathf.Clamp(speed / TopSpeed, 0f, 1f)); // pulls hardest from low speed
         }
         if (brake > 0.05f)
         {
@@ -150,6 +161,16 @@ public partial class VehicleNode : VehicleBody3D
     {
         float speed = LinearVelocity.Length();
         ApplyCentralForce(-GlobalBasis.Y * speed * speed * Downforce);
+    }
+
+    /// <summary>Someone shoved the car: roll it back onto its wheels (a real push, not a teleport).</summary>
+    public void PushUpright()
+    {
+        var axis = GlobalBasis.Y.Cross(Vector3.Up);
+        if (axis.LengthSquared() < 0.0001f)
+            axis = GlobalBasis.Z; // exactly upside down: roll over sideways
+        ApplyCentralImpulse(Vector3.Up * Mass * 2.5f);
+        ApplyTorqueImpulse(axis.Normalized() * Mass * 1.4f);
     }
 
     // ---- Camera ----
