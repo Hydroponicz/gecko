@@ -56,6 +56,8 @@ public partial class DebugMenu : CanvasLayer
     {
         var items = Items.Production;
         int[] cashAmounts = [500, 1_000, 5_000, 15_000, 35_000];
+        int[] brickAmounts = [5, 20];
+        int brickIndex = 0;
         int cashIndex = 1;
 
         _entries.Add(new Entry(
@@ -75,6 +77,25 @@ public partial class DebugMenu : CanvasLayer
                     : $"Gave {Money.Format(cashAmounts[cashIndex])} (wallet first, the rest in duffel bags)";
             },
             dir => cashIndex = (cashIndex + dir + cashAmounts.Length) % cashAmounts.Length));
+        _entries.Add(new Entry(
+            () => $"Put bricks in the car's trunk:  < {brickAmounts[brickIndex]} >",
+            () =>
+            {
+                if (GetTree().GetFirstNodeInGroup(Vehicles.VehicleNode.Group) is not Vehicles.VehicleNode car)
+                    return;
+                var temp = new CarryState();
+                int loaded = 0;
+                while (loaded < brickAmounts[brickIndex])
+                {
+                    temp.Add(ItemType.CounterfeitBrick, Mathf.Min(5, brickAmounts[brickIndex] - loaded));
+                    int n = car.Cargo.LoadFrom(temp, temp.Count);
+                    if (n == 0)
+                        break;
+                    loaded += n;
+                }
+                _lastMessage = $"Put {loaded} bricks in the trunk";
+            },
+            dir => brickIndex = (brickIndex + dir + brickAmounts.Length) % brickAmounts.Length));
         _entries.Add(new Entry(() => "Drop what you're carrying", () =>
         {
             if (PlayerCarry() is { } carry)
@@ -108,6 +129,13 @@ public partial class DebugMenu : CanvasLayer
         {
             ClockNode.Clock.SkipTo(5 * 60 + 59);
             _lastMessage = "Clock set to 5:59 AM";
+        }));
+        _entries.Add(new Entry(() => "Skip ahead 1 hour (meetings, deliveries)", () =>
+        {
+            ClockNode.Clock.Advance(60 * GameClock.RealSecondsPerDay / GameClock.MinutesPerDay);
+            foreach (var facility in Facilities())
+                facility.State.Tick(60 * (float)GameClock.RealSecondsPerDay / GameClock.MinutesPerDay);
+            _lastMessage = $"Now {ClockNode.Clock.TimeText}";
         }));
         _entries.Add(new Entry(() => "Hire a worker instantly (wages still apply)", () =>
         {

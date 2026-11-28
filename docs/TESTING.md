@@ -134,3 +134,15 @@ The sedan is parked on the avenue east of the warehouse, facing the loading bay.
 - [ ] Trunk holds 20 bricks, or 3 duffel bags; cargo shows on the rear deck.
 - [ ] In the car, hold D-pad up (or right mouse) near a worker: targeting menu + camera turns to them.
 - [ ] Gray-box streets and buildings around the area; nothing to fall through.
+
+## Step 5b checklist: selling
+Debug helpers: "Put bricks in the car's trunk" (5 / 20), "Give 5" Counterfeit Brick, "Skip ahead 1 hour".
+- [ ] Any phone: main menu shows Call the supplier / Hire a worker / Arrange a sale. Sub-menus open instantly, last option is Back.
+- [ ] Arrange a sale -> Call Tommy: a message says where and when; the objective line (top-left) shows it with distance.
+- [ ] An amber beam marks the spot; when the window opens it turns green and Tommy (hat, green) is standing there.
+- [ ] L2 on Tommy: "Sell bricks you're carrying" (tap 1, hold all) and "Sell from the Sedan's trunk" (car parked nearby).
+- [ ] From the driver's seat: D-pad up targets Tommy, sell from the trunk without getting out.
+- [ ] Cash: wallet fills first, the rest becomes duffel bags (in the trunk when selling from the car).
+- [ ] Tommy buys max 5 per deal; after 8 total he's unavailable for 2 game days (phone shows until when).
+- [ ] Pier 9 Freight: needs 10+ bricks (so trunk), pays less per brick, never on cooldown.
+- [ ] Miss a window: "got tired of waiting"; contacts walk away / disappear only once you're out of view.

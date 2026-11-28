@@ -38,12 +38,27 @@ Status: **5a done**, 5b in progress.
 - No machines can be built in the bay; idle workers don't stand there.
 - A vehicle inside the building blocks worker paths; workers walk around it (fail-safes apply).
 
-## 5b: Selling (agreed, not built)
-- Arrange sales by phone; the NPC randomly picks the meeting place and time window.
-- Buyers: small amounts (1-5), high price (~$1,000/brick), many trips, riskier once police/gangs
-  exist (may not show, haggle, or rob you). Each buyer only buys so much, then goes on a long cooldown.
-- Distributors: bulk (10+), lower price (~$700/brick), one trip, reliable, **never on cooldown**;
-  bulk needs a bigger vehicle.
+## 5b: Selling (built, awaiting test)
+- Phones (pay phones + landlines) now have sub-menus: **Call the supplier**, **Hire a worker**, **Arrange a sale**.
+  Sub-menus open instantly; "Back" is the last option.
+- Arranging: call a contact; they pick one of their meeting spots at random, a start 20-60 game minutes
+  away, and a window of 60-150 game minutes (about 2-5 real minutes).
+- Objective line (top-left) lists meetings with time and distance; a beam marks each spot
+  (amber = not there yet, green = waiting).
+- At the spot: target the contact (L2 on foot, or D-pad up from your car):
+  - **Sell bricks you're carrying** (tap = minimum, hold = as many as possible), or
+  - **Sell from the car's trunk** (your car within ~12 m).
+- Paid in dirty cash: wallet first, then duffel bags into the trunk (trunk sales), then bags in your hands.
+  You can't sell more than you can physically take away.
+- Contacts leave after the deal (or when the window ends) once you're 30 m away, so they never vanish in view.
+
+| Contact | Type | Per deal | Price | Limit |
+|---|---|---|---|---|
+| Tommy Two-Times | Buyer | 1-5 | $1,000 | 8 bricks, then 2 game days off |
+| Lady Rose | Buyer | 1-4 | $1,100 | 6 bricks, then 2 game days off |
+| Pier 9 Freight | Distributor | 10-40 | $700 | never on cooldown |
+
+Heat and automated drivers/guards come after police (step 7).
 
 ## Long-term vehicle goals
 - Weighty, GTA IV-like handling (mass, body roll, weight transfer).

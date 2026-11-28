@@ -23,6 +23,7 @@ public partial class GameHud : CanvasLayer
     private float _moneyTimer;
     private Label _notice = null!;
     private float _noticeTimer;
+    private Label _objective = null!;
 
     private const float MoneyShowSeconds = 4f;
 
@@ -71,7 +72,22 @@ public partial class GameHud : CanvasLayer
         _notice.OffsetTop = 130f;
         _notice.OffsetBottom = 200f;
         _notice.AddThemeColorOverride("font_color", new Color(1f, 0.9f, 0.5f));
+
+        _objective = MakeLabel(fontSize: 18);
+        _objective.HorizontalAlignment = HorizontalAlignment.Left;
+        _objective.AnchorLeft = 0f;
+        _objective.AnchorRight = 0f;
+        _objective.AnchorTop = 0f;
+        _objective.AnchorBottom = 0f;
+        _objective.OffsetLeft = 20f;
+        _objective.OffsetTop = 44f;
+        _objective.OffsetRight = 900f;
+        _objective.OffsetBottom = 160f;
+        _objective.AddThemeColorOverride("font_color", new Color(0.85f, 0.95f, 1f));
     }
+
+    /// <summary>Current goals (e.g. arranged meetings), top-left. Empty hides it.</summary>
+    public void SetObjective(string text) => _objective.Text = text;
 
     /// <summary>A short message at the top of the screen, e.g. payday results.</summary>
     public void Notify(string text)

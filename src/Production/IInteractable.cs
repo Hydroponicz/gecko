@@ -18,7 +18,15 @@ public sealed class Interactor(CarryState carry, Wallet wallet)
 /// so players learn what each object needs.
 /// </summary>
 /// <param name="Execute">Called with 1 for a tap or int.MaxValue for a hold; returns how much happened (0 = nothing).</param>
-public sealed record InteractOption(string Label, bool Enabled, string Detail, Func<int, int> Execute);
+/// <param name="Submenu">If set, choosing this opens a sub-menu instead (e.g. phone: "Arrange a sale" -> contacts).</param>
+public sealed record InteractOption(
+    string Label, bool Enabled, string Detail, Func<int, int> Execute,
+    Func<IReadOnlyList<InteractOption>>? Submenu = null)
+{
+    /// <summary>A menu entry that opens a sub-menu.</summary>
+    public static InteractOption Menu(string label, string detail, Func<IReadOnlyList<InteractOption>> submenu, bool enabled = true) =>
+        new(label, enabled, detail, _ => 0, submenu);
+}
 
 /// <summary>Something the player can target (hold L2 / LT / right mouse) and pick options for.</summary>
 public interface IInteractable

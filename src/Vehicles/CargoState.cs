@@ -48,6 +48,37 @@ public sealed class CargoState(int capacity)
         return count;
     }
 
+    /// <summary>How much cash could still go into the trunk as new duffel bags.</summary>
+    public int CashRoom => RoomFor(ItemType.DuffelBag) * Gecko.Economy.Money.BagCapacity;
+
+    /// <summary>Puts cash into the trunk as new duffel bags (up to $10,000 each). Returns the amount stored.</summary>
+    public int AddCash(int amount)
+    {
+        int added = 0;
+        while (added < amount && RoomFor(ItemType.DuffelBag) > 0)
+        {
+            int bag = Math.Min(Gecko.Economy.Money.BagCapacity, amount - added);
+            _bags.Add(bag);
+            added += bag;
+        }
+        if (added > 0)
+            Changed?.Invoke();
+        return added;
+    }
+
+    /// <summary>Removes items for a sale (no hands involved). Returns how many were removed.</summary>
+    public int TakeItems(ItemType type, int amount)
+    {
+        int taken = Math.Min(amount, _items.GetValueOrDefault(type));
+        if (taken <= 0)
+            return 0;
+        _items[type] -= taken;
+        if (_items[type] == 0)
+            _items.Remove(type);
+        Changed?.Invoke();
+        return taken;
+    }
+
     /// <summary>Takes items (or bags) out into someone's hands. Returns how many moved.</summary>
     public int UnloadTo(CarryState carry, ItemType type, int amount)
     {

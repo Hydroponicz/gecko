@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Gecko.Core;
 using Gecko.Economy;
 using Gecko.Production;
@@ -34,9 +36,12 @@ public partial class PlayerInteraction : Node
     private ActionTask? _task; // the walk-over-and-do-it action in progress
 
     /// <summary>An option the player chose: walk to the object, then perform it.</summary>
-    private sealed class ActionTask(IInteractable target, string optionLabel, int amount)
+    private sealed class ActionTask(IInteractable target, string optionLabel, int amount,
+        Func<IReadOnlyList<InteractOption>> menu)
     {
         public IInteractable Target { get; } = target;
+        /// <summary>The (sub-)menu the option came from, re-read when the action happens.</summary>
+        public Func<IReadOnlyList<InteractOption>> Menu { get; } = menu;
         public string OptionLabel { get; } = optionLabel;
         public int Amount { get; } = amount;
         public bool Walking { get; set; } = true;
@@ -45,6 +50,26 @@ public partial class PlayerInteraction : Node
         public bool Applied { get; set; }
     }
     private int _pressedSlot = -1;
+
+    /// <summary>Open sub-menus on the current target (empty = its main menu).</summary>
+    private readonly List<Func<IReadOnlyList<InteractOption>>> _menuStack = [];
+
+    /// <summary>The menu being shown: the target's own options, or the open sub-menu plus "Back".</summary>
+    private Func<IReadOnlyList<InteractOption>> CurrentMenu()
+    {
+        var target = _target!;
+        if (_menuStack.Count == 0)
+            return () => target.GetOptions(_who);
+        var submenu = _menuStack[^1];
+        return () =>
+        {
+            var options = new List<InteractOption>(submenu().Take(GameHud.MenuRows - 1))
+            {
+                new("Back", true, "", _ => 0, Submenu: null),
+            };
+            return options;
+        };
+    }
     private float _pressedTime;
     private bool _holdDone;
 
@@ -358,6 +383,7 @@ public partial class PlayerInteraction : Node
         _target = target;
         _target?.SetHighlighted(true);
         _pressedSlot = -1;
+        _menuStack.Clear();
     }
 
     /// <summary>Tap = 1 item (on release), hold = as many as possible (once the bar fills).</summary>
@@ -398,14 +424,27 @@ public partial class PlayerInteraction : Node
     {
         if (_target == null)
             return;
-        var options = _target.GetOptions(_who);
+        var menu = CurrentMenu();
+        var options = menu();
         if (slot >= options.Count || !options[slot].Enabled)
             return;
+
+        // Sub-menu navigation happens instantly, no walking over.
+        if (_menuStack.Count > 0 && slot == options.Count - 1 && options[slot].Label == "Back")
+        {
+            _menuStack.RemoveAt(_menuStack.Count - 1);
+            return;
+        }
+        if (options[slot].Submenu is { } submenu)
+        {
+            _menuStack.Add(submenu);
+            return;
+        }
 
         var target = _target;
         SetTarget(null);
         target.SetHighlighted(true);
-        _task = new ActionTask(target, options[slot].Label, amount);
+        _task = new ActionTask(target, options[slot].Label, amount, menu);
         _player.IsLocked = true;
         if (target.RequiresApproach)
         {
@@ -463,7 +502,7 @@ public partial class PlayerInteraction : Node
         if (!task.Applied && t >= 0.5f)
         {
             task.Applied = true;
-            foreach (var option in task.Target.GetOptions(_who))
+            foreach (var option in task.Menu())
             {
                 if (option.Label == task.OptionLabel && option.Enabled)
                 {
@@ -500,7 +539,7 @@ public partial class PlayerInteraction : Node
 
         if (_target != null)
         {
-            var options = _target.GetOptions(_who);
+            var options = CurrentMenu()();
             var rows = new GameHud.MenuRow[Mathf.Min(options.Count, GameHud.MenuRows)];
             for (int i = 0; i < rows.Length; i++)
             {
