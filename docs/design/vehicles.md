@@ -1,8 +1,9 @@
 # Vehicles & Selling — Design
 
-Status: **5a built (awaiting test)**, 5b agreed in principle.
+Status: **5a done**, 5b in progress.
 
 ## 5a: Vehicles
+- The starter sedan drives like a slow, old 1970s sedan (user is happy with this feel).
 - Arcade, GTA-like handling (Godot VehicleBody3D tuned for arcade): speed-sensitive steering,
   handbrake slides, downforce, top speed limit. All numbers exported on the car for tuning.
 - Cars never right themselves. A flipped car can't be driven: crawl out (Triangle / Y / F), then target it
